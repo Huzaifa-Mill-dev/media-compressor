@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Media Compressor — Production Grade Optimization</title>
+    <meta
+      name="description"
+      content="Compress images and videos with quality-safe encoding, AV1, responsive aspect ratio previews, and zero perceptible quality loss."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">🗜️</span>
+          <div>
+            <h1>Media Compressor</h1>
+            <p class="tagline">Quality-Safe · Web-Optimized · Self-Hosted</p>
+          </div>
+        </div>
+        <div class="team-stats-badge" id="team-stats-badge">
+          <span class="pulse-dot"></span>
+          <span id="stats-text">Loading stats…</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- Upload Section -->
+      <section id="upload-section" class="card upload-card">
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-zone-content">
+            <div class="drop-icon">
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <p class="drop-text">Drag & drop files or paste from clipboard</p>
+            <p class="drop-subtext">Click to browse · Ctrl+V / ⌘+V supported</p>
+            <p class="drop-formats">
+              MP4 · MOV · WebM · MKV · PNG · JPEG · WebP · AVIF · GIF
+              <br /><small>(Batch upload up to 10 files)</small>
+            </p>
+          </div>
+          <input
+            type="file"
+            id="file-input"
+            accept="image/*,video/*"
+            multiple
+            hidden
+          />
+        </div>
+
+        <!-- File list preview after selection -->
+        <div id="file-info" class="file-info hidden">
+          <table class="file-list-table">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Type</th>
+                <th>Size</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="file-list-body">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+          <div class="file-info-actions">
+            <button id="clear-file" class="btn-secondary">Clear Selected Files</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Options Section -->
+      <section id="options-section" class="card options-card hidden">
+        <h2 class="card-title">Compression Options</h2>
+
+        <!-- Video Options -->
+        <div id="video-options" class="options-block hidden">
+          <label class="options-header-label">Video Compression Profile</label>
+          <div class="profile-pills" id="video-profile-pills">
+            <button type="button" class="profile-pill active" data-profile="quality-safe">
+              <span class="pill-badge green">Recommended</span>
+              <span class="pill-title">🛡️ Quality-Safe</span>
+              <span class="pill-desc">CRF 18 · 100% Native Res · Zero Visible Blur</span>
+            </button>
+            <button type="button" class="profile-pill" data-profile="web-stream">
+              <span class="pill-badge blue">Web Max</span>
+              <span class="pill-title">⚡ Web Stream</span>
+              <span class="pill-desc">CRF 23 · 720p Max · ~85–95% Reduction</span>
+            </button>
+            <button type="button" class="profile-pill" data-profile="av1">
+              <span class="pill-badge purple">Next-Gen</span>
+              <span class="pill-title">🚀 AV1 Ultra</span>
+              <span class="pill-desc">libsvtav1 · Maximum Compression Efficiency</span>
+            </button>
+            <button type="button" class="profile-pill" data-profile="custom">
+              <span class="pill-badge yellow">Advanced</span>
+              <span class="pill-title">🎛️ Custom</span>
+              <span class="pill-desc">Manual control over CRF, codec & resolution</span>
+            </button>
+          </div>
+
+          <!-- Quick Toggles -->
+          <div class="quick-toggles-row">
+            <label class="toggle-control">
+              <input type="checkbox" id="strip-audio" />
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Strip Audio Track <small>(Mute for background/hero video)</small></span>
+            </label>
+          </div>
+
+          <!-- Custom Video Drawer (hidden unless Custom profile chosen) -->
+          <div id="custom-video-drawer" class="custom-drawer hidden">
+            <div class="options-grid">
+              <div class="option-group">
+                <label for="vid-format">Container</label>
+                <select id="vid-format">
+                  <option value="mp4" selected>MP4 (Universal)</option>
+                  <option value="webm">WebM</option>
+                  <option value="mov">MOV</option>
+                </select>
+              </div>
+              <div class="option-group">
+                <label for="vid-codec">Codec</label>
+                <select id="vid-codec">
+                  <option value="libx264" selected>H.264 (libx264)</option>
+                  <option value="libx265">H.265 (libx265)</option>
+                  <option value="libvpx-vp9">VP9 (libvpx-vp9)</option>
+                  <option value="libsvtav1">AV1 (libsvtav1)</option>
+                </select>
+              </div>
+              <div class="option-group">
+                <label for="vid-crf">
+                  CRF (Quality)
+                  <span id="vid-crf-val" class="option-val">18</span>
+                </label>
+                <input type="range" id="vid-crf" min="14" max="36" value="18" />
+                <div class="range-labels">
+                  <span>14 (Lossless)</span><span>18 (Safe)</span><span>28 (Low)</span>
+                </div>
+              </div>
+              <div class="option-group">
+                <label for="vid-resolution">Resolution</label>
+                <select id="vid-resolution">
+                  <option value="original" selected>Original (Native)</option>
+                  <option value="1080p">1080p Cap</option>
+                  <option value="720p">720p Cap</option>
+                  <option value="480p">480p Cap</option>
+                </select>
+              </div>
+              <div class="option-group">
+                <label for="vid-audio">Audio Bitrate</label>
+                <select id="vid-audio">
+                  <option value="192k" selected>192 kbps (High Fidelity)</option>
+                  <option value="128k">128 kbps (Crisp Web)</option>
+                  <option value="96k">96 kbps</option>
+                  <option value="64k">64 kbps</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Options -->
+        <div id="image-options" class="options-block hidden">
+          <label class="options-header-label">Image Optimization</label>
+          <div class="options-grid">
+            <div class="option-group">
+              <label for="img-format">Output Format</label>
+              <select id="img-format">
+                <option value="webp" selected>WebP (Best compatibility)</option>
+                <option value="avif">AVIF (Smallest size)</option>
+                <option value="jpeg">JPEG (mozjpeg)</option>
+                <option value="png">PNG</option>
+              </select>
+            </div>
+            <div class="option-group">
+              <label for="img-quality">
+                Quality
+                <span id="img-quality-val" class="option-val">80</span>
+              </label>
+              <input type="range" id="img-quality" min="1" max="100" value="80" />
+            </div>
+            <div class="option-group">
+              <label for="img-width">Max Width <span class="option-hint">(optional)</span></label>
+              <input type="number" id="img-width" placeholder="e.g. 1920" min="1" />
+            </div>
+            <div class="option-group">
+              <label for="img-height">Max Height <span class="option-hint">(optional)</span></label>
+              <input type="number" id="img-height" placeholder="e.g. 1080" min="1" />
+            </div>
+          </div>
+          <div class="quick-toggles-row" style="margin-top: 1rem;">
+            <label class="toggle-control">
+              <input type="checkbox" id="img-srcset" />
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Generate Responsive srcset <small>(400w, 800w, 1200w, 1920w)</small></span>
+            </label>
+          </div>
+        </div>
+
+        <button id="compress-btn" class="btn-compress">
+          <span class="btn-text">Compress Media</span>
+          <span class="btn-loader hidden">
+            <span class="spinner"></span> Compressing…
+          </span>
+        </button>
+      </section>
+
+      <!-- Progress -->
+      <div id="progress-section" class="hidden">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p class="progress-text" id="progress-text">Processing…</p>
+      </div>
+
+      <!-- Results Section -->
+      <section id="results-section" class="card results-card hidden">
+        <div class="results-header-bar">
+          <h2 class="card-title">Compression Results</h2>
+          <button id="download-all-btn" class="btn-secondary hidden" style="font-size: 0.85rem;">Download All</button>
+        </div>
+
+        <div id="results-container">
+          <!-- Dynamically populated result items -->
+        </div>
+
+        <div class="result-actions" style="display:flex; justify-content:center; gap:1rem; margin-top:1.5rem;">
+          <button id="new-btn" class="btn-new">➕ Compress More</button>
+          <button id="clear-results-btn" class="btn-secondary" style="padding: 0.75rem 1.5rem;">Clear All Results</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Side-by-Side Fullscreen Video Modal -->
+    <div id="video-modal" class="video-modal hidden" aria-hidden="true">
+      <div class="video-modal-backdrop" id="modal-backdrop"></div>
+      <div class="video-modal-container">
+        <div class="video-modal-header">
+          <div class="modal-info">
+            <span class="modal-title" id="modal-video-title">Side-by-Side Video Comparison</span>
+            <span class="modal-dims" id="modal-video-dims"></span>
+          </div>
+          <div class="modal-actions">
+            <button id="modal-sync-play-btn" class="btn-compare-pill">▶ Play Both in Sync</button>
+            <button id="modal-close-btn" class="btn-modal-close" aria-label="Close">✕</button>
+          </div>
+        </div>
+        <div class="video-modal-body">
+          <div class="modal-side-by-side">
+            <div class="modal-player-box">
+              <div class="modal-player-header">Original</div>
+              <video id="modal-orig-video" controls playsinline muted></video>
+            </div>
+            <div class="modal-player-box">
+              <div class="modal-player-header">Compressed</div>
+              <video id="modal-comp-video" controls playsinline></video>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>
+        Powered by <strong>FFmpeg</strong> & <strong>Sharp</strong> · 100% In-House · Zero Cloud Costs
+      </p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
