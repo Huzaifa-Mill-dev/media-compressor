@@ -66,10 +66,12 @@ body::before {
 }
 
 .header-inner {
-  max-width: 780px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 1.25rem 1.5rem;
-  text-align: center;
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .logo {
@@ -104,12 +106,12 @@ body::before {
 
 /* ─── Container ──────────────────────────────────────────────────────────── */
 .container {
-  max-width: 780px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 2rem 2rem 5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 /* ─── Cards ──────────────────────────────────────────────────────────────── */
@@ -1458,4 +1460,63 @@ body::before {
   object-fit: contain !important;
   background: #000 !important;
   display: block !important;
+}
+
+
+/* ─── Wide Table Spacing & Non-Squished Cells ──────────────────────────── */
+.file-list-table th,
+.file-list-table td {
+  padding: 0.85rem 1.25rem !important;
+}
+
+.file-name-cell {
+  font-weight: 500;
+  max-width: 360px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+}
+
+#history-content table td {
+  white-space: nowrap !important;
+  padding: 0.9rem 1.25rem !important;
+}
+
+.drop-zone {
+  padding: 3.5rem 2rem !important;
+}
+
+.card {
+  padding: 2rem !important;
+}
+
+
+/* ─── Animated History Toggle Chevron ───────────────────────────────────── */
+.btn-toggle-chevron {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.history-header:hover .btn-toggle-chevron {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+.chevron-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: rotate(-90deg); /* points right when closed */
+}
+
+.history-header.open .chevron-icon {
+  transform: rotate(0deg); /* points down when open */
 }

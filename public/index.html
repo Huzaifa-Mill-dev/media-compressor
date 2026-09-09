@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=3.2" />
+    <link rel="stylesheet" href="styles.css?v=3.4" />
   </head>
   <body>
     <!-- Header -->
@@ -257,12 +257,16 @@
     
       <!-- Recent History Section -->
       <section id="history-section" class="card history-card" style="margin-top: 2rem;">
-        <div class="history-header" onclick="document.getElementById('history-content').classList.toggle('hidden'); this.classList.toggle('open');" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+        <div class="history-header open" id="history-header" onclick="document.getElementById('history-content').classList.toggle('hidden'); this.classList.toggle('open');" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
           <div style="display:flex; align-items:center; gap:0.75rem;">
             <h2 class="card-title" style="margin-bottom:0; font-size:1.05rem;">📜 Team Compression History & Data</h2>
             <span class="pill-badge blue" id="history-count-badge" style="position:static;">0 logged</span>
           </div>
-          <span style="font-size:0.85rem; color:var(--text-dim);">Toggle ▼</span>
+          <div class="btn-toggle-chevron" aria-label="Toggle History">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
         </div>
         <div id="history-content" class="history-content" style="margin-top:1rem; overflow-x:auto;">
           <table class="file-list-table">
@@ -321,6 +325,6 @@
       </p>
     </footer>
 
-    <script src="app.js?v=3.2"></script>
+    <script src="app.js?v=3.4"></script>
   </body>
 </html>
