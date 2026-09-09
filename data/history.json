@@ -1,0 +1,54 @@
+{
+  "totalSavedBytes": 135581570,
+  "totalJobs": 4,
+  "items": [
+    {
+      "id": "1788943460718",
+      "timestamp": "2026-09-09T08:44:20.718Z",
+      "originalName": "Portless-Reel-Linkedin.mp4",
+      "filename": "compressed-1788943448713.mp4",
+      "type": "video",
+      "profile": "quality-safe",
+      "originalSize": 61355917,
+      "compressedSize": 13886413,
+      "savings": 77.4,
+      "qualityScore": 99.9
+    },
+    {
+      "id": "1788943279592",
+      "timestamp": "2026-09-09T08:41:19.592Z",
+      "originalName": "Portless-Reel-Linkedin.mp4",
+      "filename": "compressed-1788943264499.mp4",
+      "type": "video",
+      "profile": "av1",
+      "originalSize": 61355917,
+      "compressedSize": 13086162,
+      "savings": 78.7,
+      "qualityScore": 99.9
+    },
+    {
+      "id": "1788943061247",
+      "timestamp": "2026-09-09T08:37:41.247Z",
+      "originalName": "Portless-Reel-Insta.mp4",
+      "filename": "compressed-1788943043740.mp4",
+      "type": "video",
+      "profile": "quality-safe",
+      "originalSize": 61925185,
+      "compressedSize": 22709256,
+      "savings": 63.3,
+      "qualityScore": 100
+    },
+    {
+      "id": "1788943003380",
+      "timestamp": "2026-09-09T08:36:43.380Z",
+      "originalName": "01.mp4",
+      "filename": "compressed-1788943002201.mp4",
+      "type": "video",
+      "profile": "quality-safe",
+      "originalSize": 739289,
+      "compressedSize": 112907,
+      "savings": 84.7,
+      "qualityScore": 99.8
+    }
+  ]
+}
