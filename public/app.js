@@ -83,6 +83,30 @@
         const saved = formatSize(data.totalSavedBytes || 0);
         const count = data.totalJobs || 0;
         statsText.textContent = `${saved} Saved Across ${count} Jobs`;
+
+      // Render history table
+      const historyTableBody = document.getElementById("history-table-body");
+      const historyCountBadge = document.getElementById("history-count-badge");
+      if (historyTableBody && data.items) {
+        if (historyCountBadge) historyCountBadge.textContent = `${data.items.length} entries`;
+        historyTableBody.innerHTML = "";
+        data.items.forEach((item) => {
+          const tr = document.createElement("tr");
+          const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString() : "Recent";
+          const profileBadgeClass = item.profile === "av1" ? "purple" : item.profile === "quality-safe" ? "green" : "blue";
+          tr.innerHTML = `
+            <td style="font-weight:600; color:var(--text);">${item.originalName}</td>
+            <td><span class="pill-badge ${profileBadgeClass}" style="position:static; display:inline-block;">${item.profile || "standard"}</span></td>
+            <td>${formatSize(item.originalSize)}</td>
+            <td style="color:var(--green); font-weight:600;">${formatSize(item.compressedSize)}</td>
+            <td style="color:var(--green); font-weight:700;">-${item.savings}%</td>
+            <td>${item.qualityScore ? `${item.qualityScore} / 100` : "—"}</td>
+            <td style="color:var(--text-dim); font-size:0.75rem;">${dateStr}</td>
+          `;
+          historyTableBody.appendChild(tr);
+        });
+      }
+
       } else {
         statsText.textContent = "Self-Hosted & Active";
       }
