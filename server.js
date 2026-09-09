@@ -1,3 +1,12 @@
+
+// Process crash logging
+process.on("unhandledRejection", (reason) => {
+  console.error("💥 [Unhandled Promise Rejection]:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("💥 [Uncaught Exception]:", err);
+});
+
 const express = require("express");
 const multer = require("multer");
 const sharp = require("sharp");
@@ -39,6 +48,14 @@ const PORT = process.env.PORT || 3000;
   const p = path.join(__dirname, dir);
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 });
+
+
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + " " + units[i];
+}
 
 const HISTORY_FILE = path.join(__dirname, "data", "history.json");
 if (!fs.existsSync(HISTORY_FILE)) {
@@ -211,14 +228,14 @@ function compressVideo(inputPath, outputPath, options) {
 
     let codec = "libx264";
     let crf = "18";
-    let preset = "slow";
+    let preset = "fast";
     let audioBitrate = "192k";
     let vfFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2"; // default: preserve native, ensure even dims
 
     if (profile === "quality-safe") {
       codec = "libx264";
       crf = "18";
-      preset = "slow";
+      preset = "fast";
       audioBitrate = "192k";
       vfFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2";
     } else if (profile === "web-stream") {
@@ -230,7 +247,7 @@ function compressVideo(inputPath, outputPath, options) {
     } else if (profile === "av1") {
       codec = "libsvtav1";
       crf = options.crf ? options.crf.toString() : "28";
-      preset = "6";
+      preset = "8";
       audioBitrate = "128k";
       vfFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2";
     } else if (profile === "custom") {
@@ -251,6 +268,9 @@ function compressVideo(inputPath, outputPath, options) {
         }
       }
     }
+
+    console.log(`\n🎬 [FFmpeg Start] Encoding: ${path.basename(inputPath)} -> ${path.basename(outputPath)}`);
+    console.log(`   Settings: Codec=${codec} | CRF=${crf} | Preset=${preset} | Audio=${stripAudio ? "Muted" : audioBitrate}`);
 
     let command = ffmpeg(inputPath);
 
@@ -282,6 +302,7 @@ function compressVideo(inputPath, outputPath, options) {
     }
 
     let duration = 0;
+    let lastLogTime = 0;
 
     command
       .on("codecData", (data) => {
@@ -292,9 +313,25 @@ function compressVideo(inputPath, outputPath, options) {
             parseFloat(parts[1]) * 60 +
             parseFloat(parts[2]);
         }
+        console.log(`⏱️  [FFmpeg Info] Video Duration: ${data.duration || "unknown"}`);
       })
-      .on("end", () => resolve({ duration, codec, crf, profile }))
-      .on("error", (err) => reject(err))
+      .on("progress", (progress) => {
+        const now = Date.now();
+        if (now - lastLogTime > 2500) {
+          lastLogTime = now;
+          const pct = progress.percent ? `${Math.round(progress.percent)}%` : `Time: ${progress.timemark || "encoding..."}`;
+          const fps = progress.currentFps ? ` | ${progress.currentFps} fps` : "";
+          console.log(`⏳ [FFmpeg Progress] ${pct}${fps}`);
+        }
+      })
+      .on("end", () => {
+        console.log(`✅ [FFmpeg Complete] Finished encoding ${path.basename(outputPath)}`);
+        resolve({ duration, codec, crf, profile });
+      })
+      .on("error", (err) => {
+        console.error(`❌ [FFmpeg Error] ${err.message}`);
+        reject(err);
+      })
       .save(outputPath);
   });
 }
@@ -310,7 +347,10 @@ function extractPosterFrame(videoPath, posterPath) {
         size: "?x720",
       })
       .on("end", () => resolve(true))
-      .on("error", () => resolve(false));
+      .on("error", (err) => {
+        console.warn(`⚠️  [Poster Warning] Failed to generate poster: ${err.message}`);
+        resolve(false);
+      });
   });
 }
 
@@ -321,6 +361,9 @@ function calculateQualityScore(originalPath, compressedPath) {
     const cmd = `"${ffmpegPath}" -threads 1 -y -i "${compressedPath}" -i "${originalPath}" -filter_complex "[0:v]fps=1,scale=480:-2[v0];[1:v]fps=1,scale=480:-2[v1];[v0][v1]ssim=stats_file='${ssimLog}'" -f null -`;
 
     exec(cmd, { timeout: 25000 }, (err) => {
+      if (err) {
+        console.warn(`⚠️  [Scoring Notice] SSIM evaluation skipped/timed out: ${err.message}`);
+      }
       let score = 96.8;
       try {
         if (fs.existsSync(ssimLog)) {
@@ -381,6 +424,11 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
 
     const originalSize = fs.statSync(inputPath).size;
     const originalName = req.file.originalname;
+
+    console.log(`\n======================================================`);
+    console.log(`📥 [New Request] "${originalName}" (${formatBytes(originalSize)})`);
+    console.log(`⚙️  [Job Options] Profile: ${options.profile || "default"} | Format: ${options.format || "default"}`);
+    console.log(`======================================================`);
 
     let outputFilename, outputPath, meta;
 
@@ -458,9 +506,11 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
       qualityScore: meta.qualityScore?.score || 95,
     });
 
+    console.log(`🎉 [Success] ${originalName}: ${formatBytes(originalSize)} -> ${formatBytes(compressedSize)} (${savings}% saved) | Score: ${meta.qualityScore?.score || "N/A"}`);
     res.json(result);
   } catch (err) {
-    console.error("Compression error:", err);
+    console.error(`\n🚨 [API Error] Compression failed:`, err.message || err);
+    if (err.stack) console.error(err.stack);
     if (inputPath && fs.existsSync(inputPath)) {
       try { fs.unlinkSync(inputPath); } catch (e) {}
     }

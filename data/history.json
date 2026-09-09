@@ -1,7 +1,19 @@
 {
-  "totalSavedBytes": 135581570,
-  "totalJobs": 4,
+  "totalSavedBytes": 136217242,
+  "totalJobs": 5,
   "items": [
+    {
+      "id": "1788945902317",
+      "timestamp": "2026-09-09T09:25:02.317Z",
+      "originalName": "01.mp4",
+      "filename": "compressed-1788945901180.mp4",
+      "type": "video",
+      "profile": "quality-safe",
+      "originalSize": 739289,
+      "compressedSize": 103617,
+      "savings": 86,
+      "qualityScore": 99.8
+    },
     {
       "id": "1788943460718",
       "timestamp": "2026-09-09T08:44:20.718Z",
