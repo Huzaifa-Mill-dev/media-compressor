@@ -49,6 +49,25 @@ const PORT = process.env.PORT || 3000;
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 });
 
+const EventEmitter = require("events");
+const jobEvents = new EventEmitter();
+jobEvents.setMaxListeners(100);
+
+// Active compression jobs tracker for real-time progress syncing
+const activeJobs = new Map();
+
+function setJobProgress(jobId, data) {
+  if (!jobId) return;
+  const prev = activeJobs.get(jobId) || {};
+  const updated = {
+    ...prev,
+    ...data,
+    updatedAt: Date.now(),
+  };
+  activeJobs.set(jobId, updated);
+  jobEvents.emit(jobId, updated);
+}
+
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return "0 B";
@@ -218,7 +237,7 @@ async function compressImage(inputPath, outputPath, options) {
 
 // ─── Video Compression ──────────────────────────────────────────────────────
 
-function compressVideo(inputPath, outputPath, options) {
+function compressVideo(inputPath, outputPath, options, onProgress, totalDuration = 0, sourceBitrate = 0, sourceAudioBitrate = 0) {
   return new Promise((resolve, reject) => {
     const {
       profile = "quality-safe", // 'quality-safe', 'web-stream', 'av1', 'custom'
@@ -269,6 +288,15 @@ function compressVideo(inputPath, outputPath, options) {
       }
     }
 
+    // Audio Bitrate Ceiling (prevents upsampling audio if source is lower bitrate)
+    if (sourceAudioBitrate && sourceAudioBitrate > 0) {
+      const srcAudioK = Math.round(sourceAudioBitrate / 1000);
+      const targetAudioK = parseInt(audioBitrate) || 128;
+      if (srcAudioK > 0 && srcAudioK < targetAudioK) {
+        audioBitrate = `${srcAudioK}k`;
+      }
+    }
+
     console.log(`\n🎬 [FFmpeg Start] Encoding: ${path.basename(inputPath)} -> ${path.basename(outputPath)}`);
     console.log(`   Settings: Codec=${codec} | CRF=${crf} | Preset=${preset} | Audio=${stripAudio ? "Muted" : audioBitrate}`);
 
@@ -278,6 +306,17 @@ function compressVideo(inputPath, outputPath, options) {
     command = command.addOutputOption("-crf", crf);
     command = command.addOutputOption("-preset", preset);
     command = command.addOutputOption("-threads", "2");
+    command = command.addOutputOption("-stats_period", "0.15");
+
+    // Automatic Bitrate Ceiling: Prevent re-encoding from ever inflating file size
+    if (sourceBitrate && sourceBitrate > 0) {
+      const maxBps = Math.round(sourceBitrate * 0.92);
+      if (maxBps > 80000) {
+        command = command.addOutputOption("-maxrate", `${maxBps}`);
+        command = command.addOutputOption("-bufsize", `${Math.round(maxBps * 1.5)}`);
+        console.log(`🛡️  [Bitrate Ceiling] Capped maximum bitrate to ${Math.round(maxBps / 1000)}k (source was ${Math.round(sourceBitrate / 1000)}k)`);
+      }
+    }
 
     if (vfFilter) {
       command = command.addOutputOption("-vf", vfFilter);
@@ -301,7 +340,7 @@ function compressVideo(inputPath, outputPath, options) {
       command = command.addOutputOption("-b:v", "0");
     }
 
-    let duration = 0;
+    let duration = totalDuration || 0;
     let lastLogTime = 0;
 
     command
@@ -313,19 +352,43 @@ function compressVideo(inputPath, outputPath, options) {
             parseFloat(parts[1]) * 60 +
             parseFloat(parts[2]);
         }
-        console.log(`⏱️  [FFmpeg Info] Video Duration: ${data.duration || "unknown"}`);
+        console.log(`⏱️  [FFmpeg Info] Video Duration: ${duration || data.duration || "unknown"}s`);
+        if (onProgress) {
+          onProgress(5, "00:00:00", 0);
+        }
       })
       .on("progress", (progress) => {
         const now = Date.now();
+        let pct = progress.percent;
+        const effDuration = totalDuration > 0 ? totalDuration : duration;
+        if ((pct === undefined || pct === null || pct <= 0) && effDuration > 0 && progress.timemark) {
+          const parts = progress.timemark.split(":");
+          if (parts.length === 3) {
+            const currentSeconds =
+              parseFloat(parts[0]) * 3600 +
+              parseFloat(parts[1]) * 60 +
+              parseFloat(parts[2]);
+            pct = (currentSeconds / effDuration) * 100;
+          }
+        }
+
+        if (pct !== undefined && pct !== null && onProgress) {
+          const clampedPct = Math.min(100, Math.max(0, Math.round(pct)));
+          onProgress(clampedPct, progress.timemark, progress.currentFps);
+        }
+
         if (now - lastLogTime > 2500) {
           lastLogTime = now;
-          const pct = progress.percent ? `${Math.round(progress.percent)}%` : `Time: ${progress.timemark || "encoding..."}`;
+          const displayPct = pct ? `${Math.round(pct)}%` : `Time: ${progress.timemark || "encoding..."}`;
           const fps = progress.currentFps ? ` | ${progress.currentFps} fps` : "";
-          console.log(`⏳ [FFmpeg Progress] ${pct}${fps}`);
+          console.log(`⏳ [FFmpeg Progress] ${displayPct}${fps}`);
         }
       })
       .on("end", () => {
         console.log(`✅ [FFmpeg Complete] Finished encoding ${path.basename(outputPath)}`);
+        if (onProgress) {
+          onProgress(90, "done", 0);
+        }
         resolve({ duration, codec, crf, profile });
       })
       .on("error", (err) => {
@@ -394,8 +457,11 @@ function getVideoInfo(filePath) {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(filePath, (err, metadata) => {
       if (err) return reject(err);
-      const videoStream = metadata.streams.find(
+      const videoStream = metadata.streams?.find(
         (s) => s.codec_type === "video",
+      );
+      const audioStream = metadata.streams?.find(
+        (s) => s.codec_type === "audio",
       );
       resolve({
         width: videoStream?.width,
@@ -403,6 +469,8 @@ function getVideoInfo(filePath) {
         codec: videoStream?.codec_name,
         duration: metadata.format?.duration,
         bitrate: metadata.format?.bit_rate,
+        audioBitrate: audioStream?.bit_rate,
+        audioCodec: audioStream?.codec_name,
         format: metadata.format?.format_name,
       });
     });
@@ -430,22 +498,53 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
     console.log(`⚙️  [Job Options] Profile: ${options.profile || "default"} | Format: ${options.format || "default"}`);
     console.log(`======================================================`);
 
+    const jobId = req.body.jobId || req.headers["x-job-id"];
+
     let outputFilename, outputPath, meta;
 
     if (isImage(mime, originalName)) {
+      setJobProgress(jobId, { stage: "processing", percent: 25, message: `Optimizing ${originalName}…` });
       const format = options.format || "webp";
       outputFilename = `compressed-${Date.now()}.${format}`;
       outputPath = path.join(__dirname, "output", outputFilename);
       meta = await compressImage(inputPath, outputPath, options);
+      if (options.exportSrcset) {
+        setJobProgress(jobId, { stage: "srcset", percent: 80, message: "Generating responsive srcset variants…" });
+      }
       meta.type = "image";
       meta.qualityScore = { score: 98.0, label: "Lossless / High Fidelity" };
+      setJobProgress(jobId, { stage: "complete", percent: 100, message: "Complete!" });
     } else if (isVideo(mime, originalName)) {
+      setJobProgress(jobId, { stage: "probing", percent: 5, message: "Probing video stream & resolution…" });
       const format = options.format || "mp4";
       outputFilename = `compressed-${Date.now()}.${format}`;
       outputPath = path.join(__dirname, "output", outputFilename);
 
       const origInfo = await getVideoInfo(inputPath);
-      await compressVideo(inputPath, outputPath, options);
+      const totalDuration = parseFloat(origInfo.duration) || 0;
+      const sourceBitrate = origInfo.bitrate ? parseInt(origInfo.bitrate) : Math.round((originalSize * 8) / (totalDuration || 1));
+      const sourceAudioBitrate = origInfo.audioBitrate ? parseInt(origInfo.audioBitrate) : 0;
+
+      setJobProgress(jobId, { stage: "encoding", percent: 10, message: "Transcoding video streams…" });
+      await compressVideo(
+        inputPath,
+        outputPath,
+        options,
+        (pct, timemark, fps) => {
+          const fpsStr = fps ? ` · ${fps} fps` : "";
+          const timeStr = timemark ? ` (${timemark}${fpsStr})` : "";
+          setJobProgress(jobId, {
+            stage: "encoding",
+            percent: pct,
+            message: `Transcoding video frames${timeStr}…`,
+          });
+        },
+        totalDuration,
+        sourceBitrate,
+        sourceAudioBitrate
+      );
+
+      setJobProgress(jobId, { stage: "poster", percent: 92, message: "Extracting web poster frame…" });
       const compInfo = await getVideoInfo(outputPath);
 
       // Extract poster frame for web preview
@@ -454,6 +553,7 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
       const hasPoster = await extractPosterFrame(outputPath, posterPath);
 
       // Compute objective quality score
+      setJobProgress(jobId, { stage: "scoring", percent: 96, message: "Analyzing SSIM objective quality score…" });
       const qualityScore = await calculateQualityScore(inputPath, outputPath);
 
       meta = {
@@ -471,6 +571,7 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
         posterUrl: hasPoster ? `/api/preview/${posterFilename}` : null,
         qualityScore,
       };
+      setJobProgress(jobId, { stage: "complete", percent: 100, message: "Optimization complete!" });
     } else {
       if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
       return res.status(400).json({ error: `Unsupported file type: ${mime}` });
@@ -507,6 +608,7 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
     });
 
     console.log(`🎉 [Success] ${originalName}: ${formatBytes(originalSize)} -> ${formatBytes(compressedSize)} (${savings}% saved) | Score: ${meta.qualityScore?.score || "N/A"}`);
+    if (jobId) setTimeout(() => activeJobs.delete(jobId), 30000);
     res.json(result);
   } catch (err) {
     console.error(`\n🚨 [API Error] Compression failed:`, err.message || err);
@@ -514,16 +616,54 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
     if (inputPath && fs.existsSync(inputPath)) {
       try { fs.unlinkSync(inputPath); } catch (e) {}
     }
+    const jobId = req?.body?.jobId || req?.headers?.["x-job-id"];
+    if (jobId) {
+      setJobProgress(jobId, { stage: "error", message: err.message });
+      setTimeout(() => activeJobs.delete(jobId), 10000);
+    }
     let message = err.message || "Compression failed";
     if (message.includes("SIGKILL") || message.includes("code 137") || message.includes("killed") || message.includes("out of memory")) {
       message = "Server ran out of memory (OOM). The cloud host killed the process while encoding. Try using 'Web Stream' (720p) profile or compressing one file at a time.";
     } else if (message.includes("ffmpeg exited with code 1")) {
-      message = "FFmpeg encoding error: Invalid video stream or unsupported codec options.";
+      message = "Encoding failed. The file codec may be corrupted or unsupported by FFmpeg.";
     } else if (message.includes("EBUSY") || message.includes("ENOSPC")) {
       message = "Server disk space is full. Please clear temporary files.";
     }
     res.status(500).json({ error: message, rawDetails: err.message });
   }
+});
+
+// Real-time job progress polling endpoint
+app.get("/api/progress/:jobId", (req, res) => {
+  const info = activeJobs.get(req.params.jobId);
+  if (!info) {
+    return res.json({ percent: 0, stage: "waiting", message: "Preparing media…" });
+  }
+  res.json(info);
+});
+
+// Real-time SSE stream for millisecond-accurate FFmpeg progress
+app.get("/api/progress/:jobId/stream", (req, res) => {
+  const { jobId } = req.params;
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  const current = activeJobs.get(jobId) || { percent: 5, stage: "starting", message: "Starting…" };
+  res.write(`data: ${JSON.stringify(current)}\n\n`);
+
+  const listener = (data) => {
+    try {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch (e) {}
+  };
+
+  jobEvents.on(jobId, listener);
+
+  req.on("close", () => {
+    jobEvents.off(jobId, listener);
+  });
 });
 
 // History & statistics endpoint

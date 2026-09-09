@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=3.5" />
+    <link rel="stylesheet" href="styles.css?v=4.2" />
   </head>
   <body>
     <!-- Header -->
@@ -230,12 +230,27 @@
         </button>
       </section>
 
-      <!-- Progress -->
-      <div id="progress-section" class="hidden">
-        <div class="progress-bar">
-          <div class="progress-fill" id="progress-fill"></div>
+      <!-- Progress Card -->
+      <div id="progress-section" class="card progress-card hidden">
+        <div class="progress-header">
+          <div class="progress-status-info">
+            <span class="pulse-dot"></span>
+            <span class="progress-stage-title" id="progress-stage-title">Optimizing Media…</span>
+          </div>
+          <div class="progress-meta">
+            <span class="progress-timer" id="progress-timer">⏱️ 00:00</span>
+            <span class="progress-percent" id="progress-percent">0%</span>
+          </div>
         </div>
-        <p class="progress-text" id="progress-text">Processing…</p>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar">
+            <div class="progress-fill progress-animated" id="progress-fill"></div>
+          </div>
+        </div>
+        <div class="progress-footer">
+          <p class="progress-text" id="progress-text">Preparing optimization pipeline…</p>
+          <span class="progress-subtext" id="progress-subtext">Safe low-memory allocation active (CRF 18 · 2 threads)</span>
+        </div>
       </div>
 
       <!-- Results Section -->
@@ -319,12 +334,36 @@
       </div>
     </div>
 
+    <!-- Mid-Processing Interrupt Warning Modal -->
+    <div id="warning-modal" class="warning-modal hidden" aria-hidden="true">
+      <div class="warning-modal-backdrop" id="warning-modal-backdrop"></div>
+      <div class="warning-modal-container">
+        <div class="warning-modal-header">
+          <div class="warning-title-wrapper">
+            <span class="warning-icon">⚠️</span>
+            <span class="warning-modal-title">Compression In Progress</span>
+          </div>
+          <button id="warning-close-btn" class="btn-modal-close" aria-label="Close">✕</button>
+        </div>
+        <div class="warning-modal-body">
+          <p class="warning-msg-main">A media compression task is actively running.</p>
+          <p class="warning-msg-detail" id="warning-modal-desc">
+            Interrupting or navigating away now will cancel the encoding job in progress and you may lose processed data.
+          </p>
+        </div>
+        <div class="warning-modal-footer">
+          <button id="warning-continue-btn" class="btn-primary">Keep Compressing</button>
+          <button id="warning-abort-btn" class="btn-danger-outline">Cancel & Reset Anyway</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="footer">
       <p>
         Powered by <strong>FFmpeg</strong> & <strong>Sharp</strong> · 100% In-House · Zero Cloud Costs
       </p>
     </footer>
 
-    <script src="app.js?v=3.5"></script>
+    <script src="app.js?v=4.2"></script>
   </body>
 </html>

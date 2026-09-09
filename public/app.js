@@ -37,6 +37,10 @@
   const progressSection = document.getElementById("progress-section");
   const progressFill = document.getElementById("progress-fill");
   const progressText = document.getElementById("progress-text");
+  const progressStageTitle = document.getElementById("progress-stage-title");
+  const progressTimer = document.getElementById("progress-timer");
+  const progressPercent = document.getElementById("progress-percent");
+  const progressSubtext = document.getElementById("progress-subtext");
 
   const resultsSection = document.getElementById("results-section");
   const resultsContainer = document.getElementById("results-container");
@@ -56,10 +60,21 @@
   const modalVideoDims = document.getElementById("modal-video-dims");
   const modalSyncPlayBtn = document.getElementById("modal-sync-play-btn");
 
+  // Warning Modal references
+  const warningModal = document.getElementById("warning-modal");
+  const warningModalBackdrop = document.getElementById("warning-modal-backdrop");
+  const warningModalDesc = document.getElementById("warning-modal-desc");
+  const warningCloseBtn = document.getElementById("warning-close-btn");
+  const warningContinueBtn = document.getElementById("warning-continue-btn");
+  const warningAbortBtn = document.getElementById("warning-abort-btn");
+
   // ─── State ────────────────────────────────────────────────────────────────
   let selectedFiles = []; // Array of { id, file, type, status, url }
   let nextFileId = 1;
   let isCompressing = false;
+  let currentAbortController = null;
+  let progressInterval = null;
+  let pendingAbortAction = null;
   let activeVideoProfile = "quality-safe";
   let completedDownloads = [];
 
@@ -136,7 +151,15 @@
   vidCrf.addEventListener("input", () => { vidCrfVal.textContent = vidCrf.value; });
 
   // ─── Drag & Drop / File Input ─────────────────────────────────────────────
-  dropZone.addEventListener("click", () => fileInput.click());
+  dropZone.addEventListener("click", () => {
+    if (isCompressing) {
+      showWarningModal(() => {
+        fileInput.click();
+      }, "A media compression task is actively running. Selecting new files now will cancel the current job.");
+      return;
+    }
+    fileInput.click();
+  });
 
   dropZone.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -164,10 +187,25 @@
     }
   });
 
-  clearFileBtn.addEventListener("click", clearPendingFiles);
+  clearFileBtn.addEventListener("click", () => {
+    if (isCompressing) {
+      showWarningModal(() => {
+        clearPendingFiles();
+      }, "A compression task is actively running. Clearing selected files will cancel the active job.");
+      return;
+    }
+    clearPendingFiles();
+  });
 
   // ─── Handle File Selection ────────────────────────────────────────────────
   function handleFiles(fileList) {
+    if (isCompressing) {
+      showWarningModal(() => {
+        handleFiles(fileList);
+      }, "A compression task is actively running. Adding new files now will cancel the active job.");
+      return;
+    }
+
     const newFiles = Array.from(fileList);
 
     if (selectedFiles.length + newFiles.length > 10) {
@@ -305,6 +343,272 @@
     hide(progressSection);
   }
 
+  // ─── Unload / Refresh Guard ────────────────────────────────────────────────
+  window.addEventListener("beforeunload", (e) => {
+    if (isCompressing) {
+      e.preventDefault();
+      e.returnValue = "A media compression job is currently running. Leaving or reloading now will abort the process and you may lose your results.";
+      return e.returnValue;
+    }
+  });
+
+  // ─── Interrupt Warning Modal ──────────────────────────────────────────────
+  function showWarningModal(onAbortAction, customMessage) {
+    pendingAbortAction = onAbortAction;
+    if (customMessage && warningModalDesc) {
+      warningModalDesc.textContent = customMessage;
+    } else if (warningModalDesc) {
+      warningModalDesc.textContent =
+        "Interrupting or navigating away now will cancel the encoding job in progress and you may lose processed data.";
+    }
+    show(warningModal);
+    warningModal.removeAttribute("aria-hidden");
+  }
+
+  function closeWarningModal() {
+    hide(warningModal);
+    warningModal.setAttribute("aria-hidden", "true");
+    pendingAbortAction = null;
+  }
+
+  if (warningCloseBtn) warningCloseBtn.addEventListener("click", closeWarningModal);
+  if (warningModalBackdrop) warningModalBackdrop.addEventListener("click", closeWarningModal);
+  if (warningContinueBtn) warningContinueBtn.addEventListener("click", closeWarningModal);
+
+  if (warningAbortBtn) {
+    warningAbortBtn.addEventListener("click", () => {
+      const action = pendingAbortAction;
+      closeWarningModal();
+      abortCurrentCompression();
+      if (typeof action === "function") {
+        action();
+      }
+    });
+  }
+
+  function abortCurrentCompression() {
+    if (currentAbortController) {
+      try {
+        currentAbortController.abort();
+      } catch (e) {}
+      currentAbortController = null;
+    }
+    stopProgressSimulation(false);
+    isCompressing = false;
+    show(btnText);
+    hide(btnLoader);
+    compressBtn.disabled = false;
+    clearFileBtn.disabled = false;
+    hide(progressSection);
+
+    selectedFiles.forEach((f) => {
+      if (f.status === "processing") {
+        f.status = "error";
+        f.error = "Cancelled by user";
+      }
+    });
+    renderFileList();
+  }
+
+  // ─── Dynamic Progress Tracking & Live Backend Sync ────────────────────────
+  let activeEventSource = null;
+
+  function uploadWithProgress(url, formData, jobId, onProgress, abortController) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+      if (jobId) {
+        xhr.setRequestHeader("X-Job-Id", jobId);
+      }
+
+      if (abortController) {
+        abortController.signal.addEventListener("abort", () => {
+          xhr.abort();
+          const err = new Error("AbortError");
+          err.name = "AbortError";
+          reject(err);
+        });
+      }
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          onProgress(event.loaded, event.total);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch (e) {
+            resolve({});
+          }
+        } else {
+          try {
+            const errData = JSON.parse(xhr.responseText);
+            reject(new Error(errData.error || `HTTP error ${xhr.status}`));
+          } catch (e) {
+            reject(new Error(`HTTP error ${xhr.status}`));
+          }
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error("Network connection error during upload"));
+      };
+
+      xhr.onabort = () => {
+        const err = new Error("AbortError");
+        err.name = "AbortError";
+        reject(err);
+      };
+
+      xhr.send(formData);
+    });
+  }
+
+  function startProgressSimulation(fileName, fileIndex, totalFiles, isVideo, jobId) {
+    const startTime = Date.now();
+    let currentPhase = "upload"; // "upload" -> "encode"
+    let currentServerPct = 5;
+    const basePct = (fileIndex / totalFiles) * 100;
+    const slicePct = 100 / totalFiles;
+
+    const initialTotalPct = Math.round(basePct + (2 / 100) * slicePct);
+    if (progressFill) progressFill.style.width = `${initialTotalPct}%`;
+    if (progressPercent) progressPercent.textContent = `${initialTotalPct}%`;
+    if (progressTimer) progressTimer.textContent = "⏱️ 00:00";
+
+    if (progressStageTitle) progressStageTitle.textContent = `Uploading File (${fileIndex + 1}/${totalFiles})…`;
+    if (progressText) progressText.textContent = `Uploading "${fileName}" to processing engine…`;
+    if (progressSubtext) progressSubtext.textContent = "High-speed streaming upload active";
+
+    if (progressInterval) clearInterval(progressInterval);
+    if (activeEventSource) {
+      activeEventSource.close();
+      activeEventSource = null;
+    }
+
+    function applyUpdate(percent, message, stageTitle) {
+      currentPhase = "encode";
+      if (typeof percent === "number" && percent > currentServerPct) {
+        currentServerPct = percent;
+      }
+      if (message && progressText) {
+        progressText.textContent = message;
+      }
+      if (stageTitle && progressStageTitle) {
+        progressStageTitle.textContent = stageTitle;
+      } else if (progressStageTitle) {
+        progressStageTitle.textContent = isVideo
+          ? `Optimizing Video (${fileIndex + 1}/${totalFiles})`
+          : `Optimizing Image (${fileIndex + 1}/${totalFiles})`;
+      }
+      if (progressSubtext) {
+        progressSubtext.textContent = isVideo
+          ? "Safe low-memory allocation active (CRF 18 · 2 threads)"
+          : "Sharp high-efficiency pipeline active";
+      }
+
+      // Encode phase maps the real 0% - 100% FFmpeg progress cleanly from 20% to 95%
+      const fileProgress = Math.min(96, Math.round(20 + (currentServerPct / 100) * 75));
+      const totalPct = Math.min(99, Math.round(basePct + (fileProgress / 100) * slicePct));
+      if (progressFill) progressFill.style.width = `${totalPct}%`;
+      if (progressPercent) progressPercent.textContent = `${totalPct}%`;
+    }
+
+    // Connect to real-time Server-Sent Events stream for zero-latency FFmpeg events
+    if (jobId && window.EventSource) {
+      try {
+        activeEventSource = new EventSource(`/api/progress/${jobId}/stream`);
+        activeEventSource.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.stage && data.stage !== "waiting") {
+              applyUpdate(data.percent, data.message);
+            }
+          } catch (err) {}
+        };
+        activeEventSource.onerror = () => {
+          if (activeEventSource) {
+            activeEventSource.close();
+            activeEventSource = null;
+          }
+        };
+      } catch (err) {}
+    }
+
+    // Timer & continuous smooth progress sync
+    let isPolling = false;
+    progressInterval = setInterval(async () => {
+      const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+      const mins = String(Math.floor(elapsedSec / 60)).padStart(2, "0");
+      const secs = String(elapsedSec % 60).padStart(2, "0");
+      if (progressTimer) progressTimer.textContent = `⏱️ ${mins}:${secs}`;
+
+      if (currentPhase === "encode") {
+        if (jobId && !isPolling) {
+          isPolling = true;
+          try {
+            const res = await fetch(`/api/progress/${jobId}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.stage && data.stage !== "waiting") {
+                applyUpdate(data.percent, data.message);
+              }
+            }
+          } catch (e) {
+          } finally {
+            isPolling = false;
+          }
+        }
+      }
+    }, 160);
+
+    return {
+      onUploadProgress: (loaded, total) => {
+        if (currentPhase !== "upload") return;
+        const uploadPct = Math.round((loaded / total) * 100);
+        // Upload phase maps to 0% to 25% of the file progress
+        const fileProgress = Math.round(uploadPct * 0.25);
+        if (progressStageTitle) {
+          progressStageTitle.textContent = `Uploading File (${fileIndex + 1}/${totalFiles})…`;
+        }
+        if (progressText) {
+          progressText.textContent = `Uploading "${fileName}" (${formatSize(loaded)} / ${formatSize(total)} · ${uploadPct}%)…`;
+        }
+        if (progressSubtext) {
+          progressSubtext.textContent = "Streaming to compression engine…";
+        }
+        const totalPct = Math.min(99, Math.round(basePct + (fileProgress / 100) * slicePct));
+        if (progressFill) progressFill.style.width = `${totalPct}%`;
+        if (progressPercent) progressPercent.textContent = `${totalPct}%`;
+        if (uploadPct >= 100) {
+          currentPhase = "encode";
+          if (progressText) progressText.textContent = "Upload complete! Initializing FFmpeg transcode…";
+        }
+      },
+    };
+  }
+
+  function stopProgressSimulation(isSuccess = true) {
+    if (activeEventSource) {
+      activeEventSource.close();
+      activeEventSource = null;
+    }
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
+    }
+    if (isSuccess) {
+      if (progressFill) progressFill.style.width = "100%";
+      if (progressPercent) progressPercent.textContent = "100%";
+      if (progressStageTitle) progressStageTitle.textContent = "Optimization Complete";
+      if (progressText) progressText.textContent = "All files successfully processed!";
+      if (progressSubtext) progressSubtext.textContent = "Ready for synchronized side-by-side inspection";
+    }
+  }
+
   // ─── Compression Execution ────────────────────────────────────────────────
   compressBtn.addEventListener("click", async () => {
     const pendingItems = selectedFiles.filter((f) => f.status === "pending");
@@ -323,12 +627,13 @@
     let processedCount = 0;
 
     for (const item of pendingItems) {
+      if (!isCompressing) break;
+
       item.status = "processing";
       renderFileList();
 
-      const pct = Math.round((processedCount / totalCount) * 100);
-      progressFill.style.width = `${pct}%`;
-      progressText.textContent = `Optimizing ${item.file.name} (${processedCount + 1} of ${totalCount})…`;
+      const jobId = `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const tracker = startProgressSimulation(item.file.name, processedCount, totalCount, item.type === "video", jobId);
 
       // Build options payload
       const options = {};
@@ -354,48 +659,60 @@
       const formData = new FormData();
       formData.append("file", item.file);
       formData.append("options", JSON.stringify(options));
+      formData.append("jobId", jobId);
+
+      currentAbortController = new AbortController();
 
       try {
-        const response = await fetch("/api/compress", {
-          method: "POST",
-          body: formData,
-        });
+        const data = await uploadWithProgress(
+          "/api/compress",
+          formData,
+          jobId,
+          tracker.onUploadProgress,
+          currentAbortController
+        );
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || `HTTP error ${response.status}`);
-        }
-
-        const data = await response.json();
         item.status = "done";
         completedDownloads.push({ name: data.filename, url: data.downloadUrl });
         appendResultCard(data, item.url);
       } catch (err) {
-        console.error(err);
-        item.status = "error";
-        item.error = err.message;
-        appendErrorCard(item.file.name, err.message);
+        if (err.name === "AbortError") {
+          console.warn("Compression cancelled by user.");
+          item.status = "error";
+          item.error = "Cancelled by user";
+          appendErrorCard(item.file.name, "Compression was cancelled by user.");
+          break;
+        } else {
+          console.error(err);
+          item.status = "error";
+          item.error = err.message;
+          appendErrorCard(item.file.name, err.message);
+        }
+      } finally {
+        currentAbortController = null;
       }
 
       processedCount++;
       renderFileList();
     }
 
-    progressFill.style.width = "100%";
-    progressText.textContent = "All complete!";
+    if (isCompressing) {
+      stopProgressSimulation(true);
+      isCompressing = false;
+      show(btnText);
+      hide(btnLoader);
+      compressBtn.disabled = false;
+      clearFileBtn.disabled = false;
+      renderFileList();
 
-    isCompressing = false;
-    show(btnText);
-    hide(btnLoader);
-    compressBtn.disabled = false;
-    clearFileBtn.disabled = false;
-    renderFileList();
-
-    if (completedDownloads.length > 1) {
-      show(downloadAllBtn);
+      if (completedDownloads.length > 1) {
+        show(downloadAllBtn);
+      }
+      setTimeout(() => {
+        if (!isCompressing) hide(progressSection);
+      }, 4000);
+      loadTeamStats();
     }
-    setTimeout(() => hide(progressSection), 2000);
-    loadTeamStats();
   });
 
   // ─── Download All Button ──────────────────────────────────────────────────
@@ -549,6 +866,12 @@
           <p class="stat-value" style="color:${savingsColor}">${savingsText}</p>
         </div>
       </div>
+
+      ${data.savings < 0 ? `
+        <div style="background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.25); border-radius:6px; padding:0.65rem 0.9rem; margin-bottom:1rem; font-size:0.8rem; color:#fca5a5; line-height:1.4;">
+          💡 <strong>Notice:</strong> This video was already highly compressed at source (~${formatSize(data.originalSize / (data.duration || 100))}/s). The selected profile targeted higher visual fidelity. Use <strong>⚡ Web Stream</strong> or <strong>🚀 AV1</strong> for maximum file reduction on pre-compressed videos.
+        </div>
+      ` : ""}
 
       <div style="margin-bottom: 1rem;">
         ${sideBySideHtml}
@@ -747,6 +1070,16 @@
 
   // ─── Compress More (Keeps Previous Results!) ──────────────────────────────
   newBtn.addEventListener("click", () => {
+    if (isCompressing) {
+      showWarningModal(() => {
+        doCompressMore();
+      }, "A media compression job is currently running. Clicking 'Compress More' now will cancel the active encoding job.");
+      return;
+    }
+    doCompressMore();
+  });
+
+  function doCompressMore() {
     // Clear only current file selection and upload queue
     selectedFiles = [];
     fileInput.value = "";
@@ -759,13 +1092,23 @@
 
     // RESULTS ARE KEPT!
     dropZone.scrollIntoView({ behavior: "smooth", block: "center" });
-  });
+  }
 
   // ─── Clear All Results ────────────────────────────────────────────────────
   clearResultsBtn.addEventListener("click", () => {
+    if (isCompressing) {
+      showWarningModal(() => {
+        doClearResults();
+      }, "A media compression job is currently running. Clearing results now will cancel the active job and remove all output cards.");
+      return;
+    }
+    doClearResults();
+  });
+
+  function doClearResults() {
     resultsContainer.innerHTML = "";
     hide(resultsSection);
     hide(downloadAllBtn);
     completedDownloads = [];
-  });
+  }
 })();
