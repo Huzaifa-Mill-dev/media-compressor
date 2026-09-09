@@ -257,6 +257,7 @@ function compressVideo(inputPath, outputPath, options) {
     command = command.videoCodec(codec);
     command = command.addOutputOption("-crf", crf);
     command = command.addOutputOption("-preset", preset);
+    command = command.addOutputOption("-threads", "2");
 
     if (vfFilter) {
       command = command.addOutputOption("-vf", vfFilter);
@@ -317,7 +318,7 @@ function extractPosterFrame(videoPath, posterPath) {
 function calculateQualityScore(originalPath, compressedPath) {
   return new Promise((resolve) => {
     const ssimLog = compressedPath + ".ssim.log";
-    const cmd = `"${ffmpegPath}" -y -i "${compressedPath}" -i "${originalPath}" -filter_complex "[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2[v0];[1:v]scale=trunc(iw/2)*2:trunc(ih/2)*2[v1];[v0][v1]ssim=stats_file='${ssimLog}'" -f null -`;
+    const cmd = `"${ffmpegPath}" -threads 1 -y -i "${compressedPath}" -i "${originalPath}" -filter_complex "[0:v]fps=1,scale=480:-2[v0];[1:v]fps=1,scale=480:-2[v1];[v0][v1]ssim=stats_file='${ssimLog}'" -f null -`;
 
     exec(cmd, { timeout: 25000 }, (err) => {
       let score = 96.8;
@@ -463,7 +464,15 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
     if (inputPath && fs.existsSync(inputPath)) {
       try { fs.unlinkSync(inputPath); } catch (e) {}
     }
-    res.status(500).json({ error: err.message || "Compression failed" });
+    let message = err.message || "Compression failed";
+    if (message.includes("SIGKILL") || message.includes("code 137") || message.includes("killed") || message.includes("out of memory")) {
+      message = "Server ran out of memory (OOM). The cloud host killed the process while encoding. Try using 'Web Stream' (720p) profile or compressing one file at a time.";
+    } else if (message.includes("ffmpeg exited with code 1")) {
+      message = "FFmpeg encoding error: Invalid video stream or unsupported codec options.";
+    } else if (message.includes("EBUSY") || message.includes("ENOSPC")) {
+      message = "Server disk space is full. Please clear temporary files.";
+    }
+    res.status(500).json({ error: message, rawDetails: err.message });
   }
 });
 
@@ -512,6 +521,18 @@ setInterval(
   },
   30 * 60 * 1000,
 );
+
+
+// Global error handling for upload limits
+app.use((err, req, res, next) => {
+  if (err && err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({ error: "File exceeds the 500MB upload limit." });
+  }
+  if (err) {
+    return res.status(500).json({ error: err.message || "Upload failed" });
+  }
+  next();
+});
 
 function startServer(port) {
   const server = app.listen(port, () => {

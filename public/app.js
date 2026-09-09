@@ -227,7 +227,12 @@
           statusBadge = `<span class="status-badge done">Done</span>`;
           break;
         case "error":
-          statusBadge = `<span class="status-badge error" title="${item.error || "Error"}">Error</span>`;
+          statusBadge = `
+            <div class="status-error-container">
+              <span class="status-badge error">Failed</span>
+              <p class="status-error-text">${item.error || "Compression failed"}</p>
+            </div>
+          `;
           break;
       }
 
@@ -369,6 +374,7 @@
         console.error(err);
         item.status = "error";
         item.error = err.message;
+        appendErrorCard(item.file.name, err.message);
       }
 
       processedCount++;

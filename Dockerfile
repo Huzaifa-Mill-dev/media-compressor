@@ -18,4 +18,4 @@ RUN mkdir -p uploads output data && chmod -R 777 uploads output data
 ENV PORT=7860
 EXPOSE 7860
 
-CMD ["node", "server.js"]
+CMD ["node", "--max-old-space-size=256", "server.js"]

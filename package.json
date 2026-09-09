@@ -4,8 +4,8 @@
   "description": "Web-based media compression tool — images & videos",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node --max-old-space-size=256 server.js",
+    "dev": "node --max-old-space-size=256 server.js"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
