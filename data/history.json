@@ -1,7 +1,19 @@
 {
-  "totalSavedBytes": 189359006,
-  "totalJobs": 13,
+  "totalSavedBytes": 266032439,
+  "totalJobs": 14,
   "items": [
+    {
+      "id": "1788948797725",
+      "timestamp": "2026-09-09T10:13:17.725Z",
+      "originalName": "Responsive Scroll.mp4",
+      "filename": "compressed-1788948785259.mp4",
+      "type": "video",
+      "profile": "quality-safe",
+      "originalSize": 85647593,
+      "compressedSize": 8974160,
+      "savings": 89.5,
+      "qualityScore": 99.9
+    },
     {
       "id": "1788948111261",
       "timestamp": "2026-09-09T10:01:51.261Z",

@@ -443,6 +443,8 @@
           } catch (e) {
             resolve({});
           }
+        } else if (xhr.status === 502 || xhr.status === 503 || xhr.status === 504) {
+          reject(new Error("Server restarted or dropped connection during transcode. The cloud instance likely exceeded its 512MB RAM limit. Try using the 'Web Stream' profile."));
         } else {
           try {
             const errData = JSON.parse(xhr.responseText);
@@ -454,7 +456,7 @@
       };
 
       xhr.onerror = () => {
-        reject(new Error("Network connection error during upload"));
+        reject(new Error("Server connection lost. The server may have restarted due to memory limits."));
       };
 
       xhr.onabort = () => {

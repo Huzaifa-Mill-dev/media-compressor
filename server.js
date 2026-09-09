@@ -237,7 +237,7 @@ async function compressImage(inputPath, outputPath, options) {
 
 // ─── Video Compression ──────────────────────────────────────────────────────
 
-function compressVideo(inputPath, outputPath, options, onProgress, totalDuration = 0, sourceBitrate = 0, sourceAudioBitrate = 0) {
+function compressVideo(inputPath, outputPath, options, onProgress, totalDuration = 0, sourceBitrate = 0, sourceAudioBitrate = 0, origWidth = 0, origHeight = 0) {
   return new Promise((resolve, reject) => {
     const {
       profile = "quality-safe", // 'quality-safe', 'web-stream', 'av1', 'custom'
@@ -251,12 +251,22 @@ function compressVideo(inputPath, outputPath, options, onProgress, totalDuration
     let audioBitrate = "192k";
     let vfFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2"; // default: preserve native, ensure even dims
 
+    // Memory-Safe Auto-Cap for Cloud Free Tier (512MB RAM cap)
+    // 4K/5K Retina screen captures require enormous RAM for libx264 frame buffers and transcode at 1-2 fps.
+    // Automatically cap dimensions to max 1920x1080 if input is ultra-high resolution or bitrate > 25 Mbps.
+    const isUltraHighRes = (origWidth > 1920 || origHeight > 1080) || (sourceBitrate > 25000000);
+
     if (profile === "quality-safe") {
       codec = "libx264";
       crf = "18";
       preset = "fast";
       audioBitrate = "192k";
-      vfFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2";
+      if (isUltraHighRes) {
+        vfFilter = "scale=min(1920\\,iw):min(1080\\,ih):force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2";
+        console.log(`🛡️  [Memory Guard] Video is ultra-high res/bitrate (${origWidth}x${origHeight} · ${Math.round(sourceBitrate/1000)}k). Safely downscaling to max 1080p to protect 512MB RAM.`);
+      } else {
+        vfFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2";
+      }
     } else if (profile === "web-stream") {
       codec = "libx264";
       crf = "23";
@@ -268,7 +278,11 @@ function compressVideo(inputPath, outputPath, options, onProgress, totalDuration
       crf = options.crf ? options.crf.toString() : "28";
       preset = "8";
       audioBitrate = "128k";
-      vfFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2";
+      if (isUltraHighRes) {
+        vfFilter = "scale=min(1920\\,iw):min(1080\\,ih):force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2";
+      } else {
+        vfFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2";
+      }
     } else if (profile === "custom") {
       codec = options.codec || "libx264";
       crf = (options.crf || 18).toString();
@@ -285,6 +299,8 @@ function compressVideo(inputPath, outputPath, options, onProgress, totalDuration
         if (scaleMap[options.resolution]) {
           vfFilter = scaleMap[options.resolution];
         }
+      } else if (isUltraHighRes) {
+        vfFilter = "scale=min(1920\\,iw):min(1080\\,ih):force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2";
       }
     }
 
@@ -305,7 +321,8 @@ function compressVideo(inputPath, outputPath, options, onProgress, totalDuration
     command = command.videoCodec(codec);
     command = command.addOutputOption("-crf", crf);
     command = command.addOutputOption("-preset", preset);
-    command = command.addOutputOption("-threads", "2");
+    command = command.addOutputOption("-threads", "1"); // Safe 1-thread execution prevents Render 512MB OOM crash
+    command = command.addOutputOption("-filter_threads", "1");
     command = command.addOutputOption("-stats_period", "0.15");
 
     // Automatic Bitrate Ceiling: Prevent re-encoding from ever inflating file size
@@ -541,7 +558,9 @@ app.post("/api/compress", upload.single("file"), async (req, res) => {
         },
         totalDuration,
         sourceBitrate,
-        sourceAudioBitrate
+        sourceAudioBitrate,
+        origInfo.width || 0,
+        origInfo.height || 0
       );
 
       setJobProgress(jobId, { stage: "poster", percent: 92, message: "Extracting web poster frame…" });
