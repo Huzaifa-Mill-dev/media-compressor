@@ -1379,3 +1379,83 @@ body::before {
   background: #000;
   flex: 1;
 }
+
+
+/* ─── Ultra-Wide Fullscreen Side-by-Side Modal ────────────────────────────── */
+.video-modal-container {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 96vw !important;
+  max-width: 1600px !important;
+  height: 92vh !important;
+  max-height: 92vh !important;
+  background: #090d1a !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9) !important;
+  overflow: hidden !important;
+}
+
+.video-modal-body {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  background: #000 !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.modal-side-by-side {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 1.25rem !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .modal-side-by-side {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr 1fr !important;
+  }
+}
+
+.modal-player-box {
+  display: flex !important;
+  flex-direction: column !important;
+  background: #050811 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.modal-player-header {
+  padding: 0.5rem 1rem !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--border) !important;
+  flex: 0 0 auto !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.modal-player-box video {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  background: #000 !important;
+  display: block !important;
+}

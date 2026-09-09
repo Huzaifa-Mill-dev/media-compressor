@@ -639,6 +639,62 @@
     }
   });
 
+  
+  // ─── Modal Two-Way Video Synchronization ─────────────────────────────────
+  let isModalSyncing = false;
+
+  modalOrigVideo.addEventListener("play", () => {
+    if (!isModalSyncing && modalCompVideo.paused) {
+      isModalSyncing = true;
+      modalCompVideo.currentTime = modalOrigVideo.currentTime;
+      modalCompVideo.play().catch(() => {});
+      modalSyncPlayBtn.textContent = "⏸ Pause Both";
+      setTimeout(() => (isModalSyncing = false), 150);
+    }
+  });
+
+  modalOrigVideo.addEventListener("pause", () => {
+    if (!isModalSyncing && !modalCompVideo.paused) {
+      isModalSyncing = true;
+      modalCompVideo.pause();
+      modalSyncPlayBtn.textContent = "▶ Play Both in Sync";
+      setTimeout(() => (isModalSyncing = false), 150);
+    }
+  });
+
+  modalOrigVideo.addEventListener("seeked", () => {
+    if (Math.abs(modalCompVideo.currentTime - modalOrigVideo.currentTime) > 0.1) {
+      modalCompVideo.currentTime = modalOrigVideo.currentTime;
+    }
+  });
+
+  modalCompVideo.addEventListener("play", () => {
+    if (!isModalSyncing && modalOrigVideo.paused) {
+      isModalSyncing = true;
+      modalOrigVideo.currentTime = modalCompVideo.currentTime;
+      modalOrigVideo.play().catch(() => {});
+      modalSyncPlayBtn.textContent = "⏸ Pause Both";
+      setTimeout(() => (isModalSyncing = false), 150);
+    }
+  });
+
+  modalCompVideo.addEventListener("pause", () => {
+    if (!isModalSyncing && !modalOrigVideo.paused) {
+      isModalSyncing = true;
+      modalOrigVideo.pause();
+      modalSyncPlayBtn.textContent = "▶ Play Both in Sync";
+      setTimeout(() => (isModalSyncing = false), 150);
+    }
+  });
+
+  modalCompVideo.addEventListener("seeked", () => {
+    if (Math.abs(modalOrigVideo.currentTime - modalCompVideo.currentTime) > 0.1) {
+      modalOrigVideo.currentTime = modalCompVideo.currentTime;
+    }
+  });
+
+  window.openFullscreenModal = window.openFullscreenSideBySide;
+
   function closeFullscreenModal() {
     modalOrigVideo.pause();
     modalCompVideo.pause();

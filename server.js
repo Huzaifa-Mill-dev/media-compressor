@@ -78,7 +78,11 @@ const upload = multer({
   limits: { fileSize: 500 * 1024 * 1024 },
 });
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use((req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  next();
+});
+app.use(express.static(path.join(__dirname, "public"), { etag: false, maxAge: 0 }));
 app.use(express.json());
 
 // ─── Media Type Detection ───────────────────────────────────────────────────
