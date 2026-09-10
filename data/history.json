@@ -1,7 +1,55 @@
 {
-  "totalSavedBytes": 266032439,
-  "totalJobs": 14,
+  "totalSavedBytes": 599943263,
+  "totalJobs": 18,
   "items": [
+    {
+      "id": "1789027683488",
+      "timestamp": "2026-09-10T08:08:03.488Z",
+      "originalName": "Responsive Scroll.mp4",
+      "filename": "compressed-1789027678696.mp4",
+      "type": "video",
+      "profile": "av1",
+      "originalSize": 85287681,
+      "compressedSize": 1901569,
+      "savings": 97.8,
+      "qualityScore": 99.8
+    },
+    {
+      "id": "1789027565310",
+      "timestamp": "2026-09-10T08:06:05.310Z",
+      "originalName": "Responsive Scroll.mp4",
+      "filename": "compressed-1789027559725.mp4",
+      "type": "video",
+      "profile": "web-stream",
+      "originalSize": 85287681,
+      "compressedSize": 969027,
+      "savings": 98.9,
+      "qualityScore": 99.6
+    },
+    {
+      "id": "1789027467623",
+      "timestamp": "2026-09-10T08:04:27.623Z",
+      "originalName": "Responsive Scroll.mp4",
+      "filename": "compressed-1789027460435.mp4",
+      "type": "video",
+      "profile": "quality-safe",
+      "originalSize": 85287681,
+      "compressedSize": 2467735,
+      "savings": 97.1,
+      "qualityScore": 99.8
+    },
+    {
+      "id": "1788949871583",
+      "timestamp": "2026-09-09T10:31:11.583Z",
+      "originalName": "Responsive Scroll.mp4",
+      "filename": "compressed-1788949867093.mp4",
+      "type": "video",
+      "profile": "av1",
+      "originalSize": 85287681,
+      "compressedSize": 1901569,
+      "savings": 97.8,
+      "qualityScore": 99.8
+    },
     {
       "id": "1788948797725",
       "timestamp": "2026-09-09T10:13:17.725Z",
