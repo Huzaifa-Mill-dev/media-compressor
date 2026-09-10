@@ -78,7 +78,6 @@ body::before {
 }
 
 .logo-icon {
-  font-size: 1.25rem;
   width: 36px;
   height: 36px;
   display: flex;
@@ -88,6 +87,11 @@ body::before {
   border: 1px solid var(--primary-border);
   border-radius: var(--radius-xs);
   flex-shrink: 0;
+  color: var(--primary);
+}
+
+.logo-icon svg {
+  display: block;
 }
 
 .logo h1 {
@@ -1005,12 +1009,27 @@ body::before {
 .pill-title {
   font-size: 0.88rem;
   font-weight: 700;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   transition: color var(--transition);
 }
 
-.profile-pill.active .pill-title { color: var(--primary); }
+.pill-icon {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: color var(--transition);
+}
+
+.profile-pill.active .pill-title {
+  color: var(--primary);
+}
+
+.profile-pill.active .pill-icon {
+  color: var(--primary);
+}
 
 .pill-desc {
   font-size: 0.7rem;

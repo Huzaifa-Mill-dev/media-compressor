@@ -14,14 +14,20 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=5.0" />
+    <link rel="stylesheet" href="styles.css?v=5.1" />
   </head>
   <body>
     <!-- Header -->
     <header class="header">
       <div class="header-inner">
         <div class="logo">
-          <span class="logo-icon">🗜️</span>
+          <span class="logo-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+              <path d="M12 12v9" />
+              <path d="m8 17 4 4 4-4" />
+            </svg>
+          </span>
           <div>
             <h1>Media Compressor</h1>
             <p class="tagline">Efficient files, human touch</p>
@@ -106,22 +112,34 @@
           <div class="profile-pills" id="video-profile-pills">
             <button type="button" class="profile-pill active" data-profile="quality-safe">
               <span class="pill-badge green">Recommended</span>
-              <span class="pill-title">🛡️ Quality-Safe</span>
+              <span class="pill-title">
+                <svg class="pill-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Quality-Safe
+              </span>
               <span class="pill-desc">CRF 18 · 100% Native Res · Zero Visible Blur</span>
             </button>
             <button type="button" class="profile-pill" data-profile="web-stream">
               <span class="pill-badge blue">Web Max</span>
-              <span class="pill-title">⚡ Web Stream</span>
+              <span class="pill-title">
+                <svg class="pill-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Web Stream
+              </span>
               <span class="pill-desc">CRF 23 · 720p Max · ~85–95% Reduction</span>
             </button>
             <button type="button" class="profile-pill" data-profile="av1">
               <span class="pill-badge purple">Next-Gen</span>
-              <span class="pill-title">🚀 AV1 Ultra</span>
+              <span class="pill-title">
+                <svg class="pill-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                AV1 Ultra
+              </span>
               <span class="pill-desc">libsvtav1 · Maximum Compression Efficiency</span>
             </button>
             <button type="button" class="profile-pill" data-profile="custom">
               <span class="pill-badge yellow">Advanced</span>
-              <span class="pill-title">🎛️ Custom</span>
+              <span class="pill-title">
+                <svg class="pill-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                Custom
+              </span>
               <span class="pill-desc">Manual control over CRF, codec & resolution</span>
             </button>
           </div>
@@ -241,7 +259,7 @@
             <span class="progress-stage-title" id="progress-stage-title">Optimizing Media…</span>
           </div>
           <div class="progress-meta">
-            <span class="progress-timer" id="progress-timer">⏱️ 00:00</span>
+            <span class="progress-timer" id="progress-timer">00:00</span>
             <span class="progress-percent" id="progress-percent">0%</span>
           </div>
         </div>
@@ -268,7 +286,10 @@
         </div>
 
         <div class="result-actions" style="display:flex; justify-content:center; gap:1rem; margin-top:1.5rem;">
-          <button id="new-btn" class="btn-new">➕ Compress More</button>
+          <button id="new-btn" class="btn-new">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Compress More
+          </button>
           <button id="clear-results-btn" class="btn-secondary" style="padding: 0.75rem 1.5rem;">Clear All Results</button>
         </div>
       </section>
@@ -277,7 +298,10 @@
       <section id="history-section" class="card history-card" style="margin-top: 2rem;">
         <div class="history-header open" id="history-header" onclick="document.getElementById('history-content').classList.toggle('hidden'); this.classList.toggle('open');" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
           <div style="display:flex; align-items:center; gap:0.75rem;">
-            <h2 class="card-title" style="margin-bottom:0; font-size:1.05rem;">📜 Team Compression History & Data</h2>
+            <h2 class="card-title" style="margin-bottom:0; font-size:1.05rem; display:flex; align-items:center; gap:0.5rem;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-dim);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Team Compression History & Data
+            </h2>
             <span class="pill-badge blue" id="history-count-badge" style="position:static;">0 logged</span>
           </div>
           <div class="btn-toggle-chevron" aria-label="Toggle History">
@@ -318,8 +342,13 @@
             <span class="modal-dims" id="modal-video-dims"></span>
           </div>
           <div class="modal-actions">
-            <button id="modal-sync-play-btn" class="btn-compare-pill">▶ Play Both in Sync</button>
-            <button id="modal-close-btn" class="btn-modal-close" aria-label="Close">✕</button>
+            <button id="modal-sync-play-btn" class="btn-compare-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Play Both in Sync
+            </button>
+            <button id="modal-close-btn" class="btn-modal-close" aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
         </div>
         <div class="video-modal-body">
@@ -343,10 +372,14 @@
       <div class="warning-modal-container">
         <div class="warning-modal-header">
           <div class="warning-title-wrapper">
-            <span class="warning-icon">⚠️</span>
+            <span class="warning-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#f87171;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
             <span class="warning-modal-title">Compression In Progress</span>
           </div>
-          <button id="warning-close-btn" class="btn-modal-close" aria-label="Close">✕</button>
+          <button id="warning-close-btn" class="btn-modal-close" aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
         <div class="warning-modal-body">
           <p class="warning-msg-main">A media compression task is actively running.</p>

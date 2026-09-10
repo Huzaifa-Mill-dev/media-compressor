@@ -277,10 +277,10 @@
       let actionsHtml = "";
       if (!isCompressing) {
         if (item.status === "error") {
-          actionsHtml += `<button class="btn-icon retry" onclick="retryFile(${item.id})" title="Retry">↺</button>`;
+          actionsHtml += `<button class="btn-icon retry" onclick="retryFile(${item.id})" title="Retry"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></button>`;
         }
         if (item.status === "pending" || item.status === "error") {
-          actionsHtml += `<button class="btn-icon" onclick="removeFile(${item.id})" title="Remove">✕</button>`;
+          actionsHtml += `<button class="btn-icon" onclick="removeFile(${item.id})" title="Remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
         }
       }
 
@@ -479,7 +479,7 @@
     const initialTotalPct = Math.round(basePct + (2 / 100) * slicePct);
     if (progressFill) progressFill.style.width = `${initialTotalPct}%`;
     if (progressPercent) progressPercent.textContent = `${initialTotalPct}%`;
-    if (progressTimer) progressTimer.textContent = "⏱️ 00:00";
+    if (progressTimer) progressTimer.textContent = "00:00";
 
     if (progressStageTitle) progressStageTitle.textContent = `Uploading File (${fileIndex + 1}/${totalFiles})…`;
     if (progressText) progressText.textContent = `Uploading "${fileName}" to processing engine…`;
@@ -546,7 +546,7 @@
       const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
       const mins = String(Math.floor(elapsedSec / 60)).padStart(2, "0");
       const secs = String(elapsedSec % 60).padStart(2, "0");
-      if (progressTimer) progressTimer.textContent = `⏱️ ${mins}:${secs}`;
+      if (progressTimer) progressTimer.textContent = `${mins}:${secs}`;
 
       if (currentPhase === "encode") {
         if (jobId && !isPolling) {
@@ -804,7 +804,8 @@
         </div>
         <div class="preview-actions-bar">
           <button type="button" class="btn-sync-play" onclick="toggleSyncPlay('${cardId}')">
-            ▶ Play / Pause Both in Sync
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Play / Pause Both in Sync
           </button>
           <button type="button" class="btn-expand-preview" onclick="openFullscreenSideBySide('${data.originalName}', '${originalUrl}', '${data.previewUrl}', '${dimsText}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -813,7 +814,7 @@
               <line x1="21" y1="3" x2="14" y2="10"></line>
               <line x1="3" y1="21" x2="10" y2="14"></line>
             </svg>
-            <span>⛶ Fullscreen Comparison</span>
+            <span>Fullscreen Comparison</span>
           </button>
         </div>
       `;
@@ -871,7 +872,7 @@
 
       ${data.savings < 0 ? `
         <div style="background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.25); border-radius:6px; padding:0.65rem 0.9rem; margin-bottom:1rem; font-size:0.8rem; color:#fca5a5; line-height:1.4;">
-          💡 <strong>Notice:</strong> This video was already highly compressed at source (~${formatSize(data.originalSize / (data.duration || 100))}/s). The selected profile targeted higher visual fidelity. Use <strong>⚡ Web Stream</strong> or <strong>🚀 AV1</strong> for maximum file reduction on pre-compressed videos.
+          <strong>Notice:</strong> This video was already highly compressed at source (~${formatSize(data.originalSize / (data.duration || 100))}/s). The selected profile targeted higher visual fidelity. Use <strong>Web Stream</strong> or <strong>AV1 Ultra</strong> for maximum file reduction on pre-compressed videos.
         </div>
       ` : ""}
 
@@ -986,11 +987,11 @@
       modalCompVideo.currentTime = modalOrigVideo.currentTime;
       modalOrigVideo.play().catch(() => {});
       modalCompVideo.play().catch(() => {});
-      modalSyncPlayBtn.textContent = "⏸ Pause Both";
+      modalSyncPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause Both';
     } else {
       modalOrigVideo.pause();
       modalCompVideo.pause();
-      modalSyncPlayBtn.textContent = "▶ Play Both in Sync";
+      modalSyncPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Both in Sync';
     }
   });
 
@@ -1003,7 +1004,7 @@
       isModalSyncing = true;
       modalCompVideo.currentTime = modalOrigVideo.currentTime;
       modalCompVideo.play().catch(() => {});
-      modalSyncPlayBtn.textContent = "⏸ Pause Both";
+      modalSyncPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause Both';
       setTimeout(() => (isModalSyncing = false), 150);
     }
   });
@@ -1012,7 +1013,7 @@
     if (!isModalSyncing && !modalCompVideo.paused) {
       isModalSyncing = true;
       modalCompVideo.pause();
-      modalSyncPlayBtn.textContent = "▶ Play Both in Sync";
+      modalSyncPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Both in Sync';
       setTimeout(() => (isModalSyncing = false), 150);
     }
   });
@@ -1028,7 +1029,7 @@
       isModalSyncing = true;
       modalOrigVideo.currentTime = modalCompVideo.currentTime;
       modalOrigVideo.play().catch(() => {});
-      modalSyncPlayBtn.textContent = "⏸ Pause Both";
+      modalSyncPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause Both';
       setTimeout(() => (isModalSyncing = false), 150);
     }
   });
@@ -1037,7 +1038,7 @@
     if (!isModalSyncing && !modalOrigVideo.paused) {
       isModalSyncing = true;
       modalOrigVideo.pause();
-      modalSyncPlayBtn.textContent = "▶ Play Both in Sync";
+      modalSyncPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Both in Sync';
       setTimeout(() => (isModalSyncing = false), 150);
     }
   });
@@ -1058,7 +1059,7 @@
     hide(videoModal);
     videoModal.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
-    modalSyncPlayBtn.textContent = "▶ Play Both in Sync";
+    modalSyncPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Both in Sync';
   }
 
   modalCloseBtn.addEventListener("click", closeFullscreenModal);
