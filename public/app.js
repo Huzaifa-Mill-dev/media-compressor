@@ -86,6 +86,15 @@
     return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + " " + units[i];
   }
 
+  function formatDuration(ms) {
+    if (!ms || ms <= 0) return "—";
+    const sec = ms / 1000;
+    if (sec < 60) return `${sec.toFixed(1)}s`;
+    const min = Math.floor(sec / 60);
+    const remSec = Math.round(sec % 60);
+    return `${min}m ${remSec}s`;
+  }
+
   function show(el) { if (el) el.classList.remove("hidden"); }
   function hide(el) { if (el) el.classList.add("hidden"); }
 
@@ -109,13 +118,27 @@
           const tr = document.createElement("tr");
           const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString() : "Recent";
           const profileBadgeClass = item.profile === "av1" ? "purple" : item.profile === "quality-safe" ? "green" : "blue";
+
+          const typeIcon = item.type === "image"
+            ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green); vertical-align:-2px; margin-right:6px; flex-shrink:0;" title="Image"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
+            : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary); vertical-align:-2px; margin-right:6px; flex-shrink:0;" title="Video"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`;
+
+          const nameCellHtml = item.s3Url
+            ? `<span style="display:inline-flex; align-items:center;">${typeIcon}<a href="${item.s3Url}" target="_blank" rel="noopener noreferrer" style="color:var(--primary); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:0.35rem;" title="Open permanent S3 file">${item.originalName} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a></span>`
+            : `<span style="display:inline-flex; align-items:center; font-weight:600; color:var(--text);">${typeIcon}${item.originalName}</span>`;
+
+          const savingsFormatted = item.savings !== undefined ? `${Number(item.savings).toFixed(1)}%` : "—";
+          const scoreFormatted = item.qualityScore ? `${Number(item.qualityScore).toFixed(1)} / 100` : "—";
+          const timeFormatted = item.processingTimeMs ? formatDuration(item.processingTimeMs) : "—";
+
           tr.innerHTML = `
-            <td style="font-weight:600; color:var(--text);">${item.originalName}</td>
+            <td>${nameCellHtml}</td>
             <td><span class="pill-badge ${profileBadgeClass}" style="position:static; display:inline-block;">${item.profile || "standard"}</span></td>
             <td>${formatSize(item.originalSize)}</td>
             <td style="color:var(--green); font-weight:600;">${formatSize(item.compressedSize)}</td>
-            <td style="color:var(--green); font-weight:700;">-${item.savings}%</td>
-            <td>${item.qualityScore ? `${item.qualityScore} / 100` : "—"}</td>
+            <td style="color:var(--green); font-weight:700;">-${savingsFormatted}</td>
+            <td>${scoreFormatted}</td>
+            <td style="color:var(--text-dim); font-size:0.8rem;">${timeFormatted}</td>
             <td style="color:var(--text-dim); font-size:0.75rem;">${dateStr}</td>
           `;
           historyTableBody.appendChild(tr);
@@ -210,6 +233,14 @@
 
     if (selectedFiles.length + newFiles.length > 10) {
       alert("You can select up to 10 files in a single batch.");
+      return;
+    }
+
+    const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+    const oversized = newFiles.filter((f) => f.size > MAX_FILE_SIZE);
+    if (oversized.length > 0) {
+      const names = oversized.map((f) => `• ${f.name} (${formatSize(f.size)})`).join("\n");
+      alert(`The following file(s) exceed the 500 MB limit:\n\n${names}\n\nPlease select files under 500 MB.`);
       return;
     }
 
@@ -444,13 +475,13 @@
             resolve({});
           }
         } else if (xhr.status === 502 || xhr.status === 503 || xhr.status === 504) {
-          reject(new Error("Server restarted or dropped connection during transcode. The cloud instance likely exceeded its 512MB RAM limit. Try using the 'Web Stream' profile."));
+          reject(new Error("Server connection lost or timed out during transcode. Please try again or use the Web Stream profile for large files."));
         } else {
           try {
             const errData = JSON.parse(xhr.responseText);
-            reject(new Error(errData.error || `HTTP error ${xhr.status}`));
+            reject(new Error(errData.error || `HTTP Error ${xhr.status}: Failed to process file`));
           } catch (e) {
-            reject(new Error(`HTTP error ${xhr.status}`));
+            reject(new Error(`Server error (${xhr.status}). Please check file format and try again.`));
           }
         }
       };
@@ -491,7 +522,14 @@
       activeEventSource = null;
     }
 
-    function applyUpdate(percent, message, stageTitle) {
+    function applyUpdate(percent, message, stageTitle, stage) {
+      if (stage === "queued") {
+        if (progressStageTitle) progressStageTitle.textContent = stageTitle || "In Queue…";
+        if (progressText) progressText.textContent = message || "Waiting for active encode to finish…";
+        if (progressSubtext) progressSubtext.textContent = "Concurrency queue active (1 encode at a time) to prevent server overload.";
+        return;
+      }
+
       currentPhase = "encode";
       if (typeof percent === "number" && percent > currentServerPct) {
         currentServerPct = percent;
@@ -527,7 +565,7 @@
           try {
             const data = JSON.parse(e.data);
             if (data.stage && data.stage !== "waiting") {
-              applyUpdate(data.percent, data.message);
+              applyUpdate(data.percent, data.message, data.stageTitle, data.stage);
             }
           } catch (err) {}
         };
@@ -556,7 +594,7 @@
             if (res.ok) {
               const data = await res.json();
               if (data.stage && data.stage !== "waiting") {
-                applyUpdate(data.percent, data.message);
+                applyUpdate(data.percent, data.message, data.stageTitle, data.stage);
               }
             }
           } catch (e) {
@@ -675,7 +713,8 @@
         );
 
         item.status = "done";
-        completedDownloads.push({ name: data.filename, url: data.downloadUrl });
+        const finalDownloadName = data.downloadName || data.originalName;
+        completedDownloads.push({ name: finalDownloadName, url: data.downloadUrl });
         appendResultCard(data, item.url);
       } catch (err) {
         if (err.name === "AbortError") {
@@ -683,6 +722,7 @@
           item.status = "error";
           item.error = "Cancelled by user";
           appendErrorCard(item.file.name, "Compression was cancelled by user.");
+          try { fetch(`/api/cancel/${jobId}`, { method: "POST" }).catch(() => {}); } catch (e) {}
           break;
         } else {
           console.error(err);
@@ -741,6 +781,20 @@
     const cardId = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const dimsText = `${data.outputWidth || data.originalWidth}×${data.outputHeight || data.originalHeight}`;
 
+    // Time Taken Badge
+    let timeBadgeHtml = "";
+    if (data.processingTimeMs) {
+      timeBadgeHtml = `
+        <div class="quality-score-badge" style="background:rgba(255, 255, 255, 0.04); border:1px solid var(--border); color:var(--text-dim);" title="Encoding execution time">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span>${formatDuration(data.processingTimeMs)}</span>
+        </div>
+      `;
+    }
+
     // Quality Score Badge
     let qualityBadgeHtml = "";
     if (data.qualityScore) {
@@ -749,7 +803,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          <span>Score: ${data.qualityScore.score} · ${data.qualityScore.label}</span>
+          <span>Score: ${Number(data.qualityScore.score).toFixed(1)} · ${data.qualityScore.label}</span>
         </div>
       `;
     }
@@ -822,10 +876,31 @@
 
     const detailRows = [
       ["Original Size", formatSize(data.originalSize)],
-      ["Compressed Size", formatSize(data.compressedSize)],
+      ["Compressed Size", `${formatSize(data.compressedSize)} (-${Number(data.savings).toFixed(1)}%)`],
       ["Dimensions", `${data.outputWidth || data.originalWidth} × ${data.outputHeight || data.originalHeight}`],
-      ["Output Profile/Codec", data.profile || data.outputCodec || data.outputFormat || "—"],
     ];
+
+    if (data.type === "video") {
+      detailRows.push(["Profile", (data.profile || "Quality-Safe").toUpperCase()]);
+      detailRows.push(["Video Codec", data.outputCodec || "libx264"]);
+      if (data.originalBitrate || data.compressedBitrate) {
+        detailRows.push(["Bitrate", `${formatSize((data.compressedBitrate || 0) / 8)}/s (was ${formatSize((data.originalBitrate || 0) / 8)}/s)`]);
+      }
+    } else {
+      detailRows.push(["Output Format", (data.outputFormat || data.format || "webp").toUpperCase()]);
+    }
+
+    if (data.qualityScore) {
+      detailRows.push(["Quality Score", `${Number(data.qualityScore.score).toFixed(1)} / 100 · ${data.qualityScore.label}`]);
+    }
+
+    if (data.processingTimeMs) {
+      detailRows.push(["Time Taken", formatDuration(data.processingTimeMs)]);
+    }
+
+    if (data.s3Url) {
+      detailRows.push(["S3 Permanent Link", `<a href="${data.s3Url}" target="_blank" rel="noopener noreferrer" style="color:var(--primary); word-break:break-all;">${data.s3Url}</a>`]);
+    }
 
     let detailsTableHtml = "";
     detailRows.forEach(([l, v]) => {
@@ -839,14 +914,25 @@
       });
     }
 
+    const finalDownloadName = data.downloadName || data.originalName;
     const card = document.createElement("div");
     card.className = "result-item";
     card.innerHTML = `
       <div class="result-header">
-        <div class="result-filename">${data.originalName} &rarr; ${data.filename}</div>
-        <div style="display:flex; align-items:center; gap:0.6rem;">
+        <div class="result-filename">${data.originalName} &rarr; ${finalDownloadName}</div>
+        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          ${timeBadgeHtml}
           ${qualityBadgeHtml}
-          <a href="${data.downloadUrl}" download="${data.filename}" class="btn-download" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; flex: 0 0 auto;">Download</a>
+          ${data.s3Url ? `
+            <button type="button" class="btn-s3" onclick="copyS3Link('${data.s3Url}', this)" title="Copy permanent AWS S3 link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              <span>Copy S3 Link</span>
+            </button>
+          ` : ""}
+          <a href="${data.downloadUrl}" download="${finalDownloadName}" class="btn-download" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; flex: 0 0 auto;">Download</a>
         </div>
       </div>
 
@@ -1050,6 +1136,26 @@
   });
 
   window.openFullscreenModal = window.openFullscreenSideBySide;
+
+  window.copyS3Link = (url, btn) => {
+    if (!navigator.clipboard) {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    } else {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Copied!</span>`;
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.innerHTML = origHtml;
+      btn.classList.remove("copied");
+    }, 2000);
+  };
 
   function closeFullscreenModal() {
     modalOrigVideo.pause();
