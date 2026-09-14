@@ -1,7 +1,21 @@
 {
-  "totalSavedBytes": 599943263,
-  "totalJobs": 18,
+  "totalSavedBytes": 601102336,
+  "totalJobs": 19,
   "items": [
+    {
+      "id": "1789380862844",
+      "timestamp": "2026-09-14T10:14:22.844Z",
+      "originalName": "Countries-we-operate.png",
+      "filename": "compressed-1789380862522.webp",
+      "type": "image",
+      "profile": "webp",
+      "originalSize": 1283695,
+      "compressedSize": 124622,
+      "savings": 90.3,
+      "qualityScore": 96.8,
+      "processingTimeMs": 311,
+      "s3Url": null
+    },
     {
       "id": "1789027683488",
       "timestamp": "2026-09-10T08:08:03.488Z",

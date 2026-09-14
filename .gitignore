@@ -1,6 +1,7 @@
 node_modules/
 uploads/
 output/
+data/*.json
 *.log
 .DS_Store
 *.bak
