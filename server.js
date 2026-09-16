@@ -299,7 +299,7 @@ function isVideo(mime, filename = "") {
 async function compressImage(inputPath, outputPath, options) {
   const { format = "webp", quality = 80, width, height, effort, exportSrcset = false } = options;
 
-  let pipeline = sharp(inputPath);
+  let pipeline = sharp(inputPath).rotate(); // Auto-rotate based on EXIF orientation (fixes upside down or rotated phone photos)
   const metadata = await sharp(inputPath).metadata();
 
   if (width || height) {
@@ -317,6 +317,7 @@ async function compressImage(inputPath, outputPath, options) {
       pipeline = pipeline.webp({
         quality: q,
         effort: effort ? parseInt(effort) : 4,
+        smartSubsample: true, // Prevents edge color-bleeding on UI text & screenshots
       });
       break;
     case "avif":
@@ -332,6 +333,7 @@ async function compressImage(inputPath, outputPath, options) {
     case "png":
       pipeline = pipeline.png({
         quality: q,
+        palette: true, // Uses libimagequant (pngquant engine) for massive 60-80% TinyPNG-style savings
         compressionLevel: effort ? parseInt(effort) : 6,
       });
       break;
@@ -339,7 +341,7 @@ async function compressImage(inputPath, outputPath, options) {
       pipeline = pipeline.tiff({ quality: q });
       break;
     default:
-      pipeline = pipeline.webp({ quality: q });
+      pipeline = pipeline.webp({ quality: q, smartSubsample: true });
   }
 
   await pipeline.toFile(outputPath);
@@ -469,9 +471,13 @@ function compressVideo(inputPath, outputPath, options, onProgress, totalDuration
     command = command.addOutputOption("-filter_threads", "2");
     command = command.addOutputOption("-stats_period", "0.15");
 
-    // Production-Grade Standard: Standard 4:2:0 YUV chroma subsampling for 100% universal hardware playback
+    // Production-Grade Standard: Standard 4:2:0 YUV chroma subsampling + BT.709 color tagging
+    // BT.709 tags ensure exact color & contrast match across Safari, Chrome, and iOS without gamma shifting
     if (codec === "libx264" || codec === "libx265") {
       command = command.addOutputOption("-pix_fmt", "yuv420p");
+      command = command.addOutputOption("-color_primaries", "bt709");
+      command = command.addOutputOption("-color_trc", "bt709");
+      command = command.addOutputOption("-colorspace", "bt709");
     }
 
     // Automatic Bitrate Ceiling: Prevent re-encoding from ever inflating file size
@@ -485,6 +491,11 @@ function compressVideo(inputPath, outputPath, options, onProgress, totalDuration
     }
 
     if (vfFilter) {
+      // Force Sample Aspect Ratio to 1:1 (square pixels)
+      // This prevents web players (Webflow, Safari, Chrome) from letterboxing, stretching, or rendering 1-2px black border lines
+      if (!vfFilter.includes("setsar=1")) {
+        vfFilter += ",setsar=1";
+      }
       command = command.addOutputOption("-vf", vfFilter);
     }
 
