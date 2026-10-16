@@ -41,9 +41,10 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
+            package-lock.json
             engine/package-lock.json
             web/package-lock.json
-      - run: npm --prefix engine ci && npm --prefix web ci
+      - run: npm ci && npm --prefix engine ci && npm --prefix web ci
       - run: npx --prefix web playwright install --with-deps chromium
       - name: Astro check
         run: npm --prefix web run check
