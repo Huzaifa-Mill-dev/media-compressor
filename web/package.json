@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview --port 4321",
     "check": "astro check",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:e2e": "playwright test -c playwright.e2e.config.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "3.7.4",

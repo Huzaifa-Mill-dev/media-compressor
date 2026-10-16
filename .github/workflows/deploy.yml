@@ -31,6 +31,9 @@ jobs:
         run: npm test -- --reporter=default --reporter=github-actions
       - name: Build site and server
         run: npm run build
+      - run: npx --prefix web playwright install --with-deps chromium
+      - name: Full-stack E2E (real server + built site)
+        run: npm --prefix web run test:e2e
 
   browser:
     runs-on: ubuntu-latest

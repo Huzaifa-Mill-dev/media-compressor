@@ -15,7 +15,30 @@ import { availableTools, crossValidate, isToolId, resolveOptions, SERVER_TOOLS, 
 import { contentDisposition, extOf, sanitizeFilename } from "./util.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const DRAIN_CAP = 64 * 1024 * 1024;
+
+const draining = new WeakMap<Request, Promise<void>>();
+/** Read and discard the rest of a request body (bounded), resolving when it ends. Idempotent per request. */
+function drainRequest(req: Request, cap: number): Promise<void> {
+  let p = draining.get(req);
+  if (!p) {
+    p = new Promise<void>((resolve) => {
+      if (req.complete) return resolve();
+      let n = 0;
+      req.on("data", (c: Buffer) => {
+        n += c.length;
+        if (n > cap) {
+          req.destroy();
+          resolve();
+        }
+      });
+      req.once("end", () => resolve());
+      req.once("close", () => resolve());
+      req.resume();
+    });
+    draining.set(req, p);
+  }
+  return p;
+}
 
 export interface App {
   app: express.Express;
@@ -61,6 +84,7 @@ export async function createApp(cfg: ServerConfig, bins: Binaries): Promise<App>
   const stats = new Stats(cfg.dataDir);
   const manager = new JobManager(cfg, bins, stats, log);
   await manager.sweep();
+  const drainCap = cfg.maxTotalBytes + 16 * 1024 * 1024;
   const limiter = rateLimiter(cfg.rateLimitMax, cfg.rateLimitWindowMs);
 
   const app = express();
@@ -117,12 +141,7 @@ export async function createApp(cfg: ServerConfig, bins: Binaries): Promise<App>
       if (failure) return;
       failure = err;
       req.unpipe(bb);
-      let drained = 0;
-      req.on("data", (c: Buffer) => {
-        drained += c.length;
-        if (drained > DRAIN_CAP) req.destroy();
-      });
-      req.resume();
+      void drainRequest(req, drainCap);
       void settle();
     };
 
@@ -318,12 +337,15 @@ export async function createApp(cfg: ServerConfig, bins: Binaries): Promise<App>
   }
 
   // ---- errors ----------------------------------------------------------------------------------
-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  app.use(async (err: unknown, req: Request, res: Response, _next: NextFunction) => {
     void _next;
     if (res.headersSent) return void res.destroy();
+    // Rejected before the body was read (429 / 400 / 503): consume the rest (bounded) first, otherwise the
+    // client sees a connection reset instead of our response.
+    await drainRequest(req, drainCap);
+    if (res.headersSent || res.writableEnded) return;
     if (err instanceof HttpError) {
       res.status(err.status);
-      if (err.status === 413 || err.status === 429) res.setHeader("Connection", "close");
       return void res.json({ error: err.message, code: err.code });
     }
     log.error("unhandled", { err: err instanceof Error ? err.message.slice(0, 300) : String(err) });

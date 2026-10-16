@@ -229,7 +229,7 @@ export const tools: ToolDefinition[] = [
     id: "video-convert",
     category: "video",
     slug: "convert-video",
-    title: "Video Converter — MOV to MP4, MP4 to WebM, Video to GIF",
+    title: "Video Converter — MOV, MP4, WebM & GIF",
     description:
       "Convert videos between MP4, WebM, MOV and MKV or turn clips into GIFs, directly in your browser — fast, free and private.",
     accepts: VIDEO_INPUTS,
