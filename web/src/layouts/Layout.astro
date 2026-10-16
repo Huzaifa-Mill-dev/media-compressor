@@ -1,0 +1,102 @@
+---
+import "@fontsource-variable/inter/wght.css";
+import "../styles/global.css";
+import { SITE_NAME, SITE_TAGLINE, CATEGORIES } from "../lib/content";
+import { toolsByCategory } from "../lib/registry";
+
+interface Props {
+  title: string;
+  description: string;
+  /** JSON-LD objects to embed (serialised safely). */
+  jsonLd?: Record<string, unknown>[];
+  noindex?: boolean;
+  ogType?: string;
+}
+
+const { title, description, jsonLd = [], noindex = false, ogType = "website" } = Astro.props;
+const site = Astro.site ?? new URL("http://localhost:3000");
+const cleanPath = Astro.url.pathname.replace(/\.html$/, "").replace(/\/index$/, "/").replace(/(.)\/$/, "$1");
+const canonical = new URL(cleanPath, site).href;
+const ogImage = new URL("/og.png", site).href;
+const path = cleanPath;
+const navCats = toolsByCategory().map((g) => g.category);
+
+/** Escape `<` so a JSON string can never close the <script> element. */
+function ldJson(obj: unknown): string {
+  return JSON.stringify(obj).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+}
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#141414" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {jsonLd.map((obj) => <script type="application/ld+json" set:html={ldJson(obj)} />)}
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/" aria-label={`${SITE_NAME} home`}>
+          <span class="logo-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+              <path d="M12 12v9"></path>
+              <path d="m8 17 4 4 4-4"></path>
+            </svg>
+          </span>
+          <span>
+            <span class="logo-name">{SITE_NAME}</span>
+            <span class="tagline">{SITE_TAGLINE}</span>
+          </span>
+        </a>
+        <div class="header-right">
+          <nav class="nav" aria-label="Tool categories">
+            {
+              navCats.map((c) => (
+                <a href={`/${c}`} aria-current={path === `/${c}` ? "page" : undefined}>
+                  {CATEGORIES[c].label}
+                </a>
+              ))
+            }
+          </nav>
+          <div class="stats-badge" id="stats-badge" data-state="loading" role="status" aria-live="polite">
+            <span class="pulse-dot" aria-hidden="true"></span>
+            <span id="stats-text">Private by design</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="container" tabindex="-1">
+      <slot />
+    </main>
+
+    <footer class="footer">
+      <nav aria-label="Footer">
+        <a href="/">All tools</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+      <p>Files are processed on your device whenever possible · Free, no sign-up, no watermark</p>
+    </footer>
+    <script>
+      import "../scripts/stats.ts";
+    </script>
+  </body>
+</html>

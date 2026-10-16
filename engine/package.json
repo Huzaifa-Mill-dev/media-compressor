@@ -1,0 +1,47 @@
+{
+  "name": "@media-toolkit/engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "copy-assets": "node scripts/copy-assets.mjs",
+    "test": "npm run test:unit && npm run test:browser",
+    "test:unit": "vitest run --project unit",
+    "test:browser": "node scripts/make-fixtures.mjs && vitest run --project browser"
+  },
+  "dependencies": {
+    "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/core-mt": "0.12.10",
+    "@ffmpeg/ffmpeg": "0.12.15",
+    "@ffmpeg/util": "0.12.2",
+    "@jsquash/avif": "2.1.1",
+    "@jsquash/jpeg": "1.6.0",
+    "@jsquash/oxipng": "2.3.0",
+    "@jsquash/png": "3.1.1",
+    "@jsquash/resize": "2.1.1",
+    "@jsquash/webp": "1.5.0",
+    "@mediabunny/aac-encoder": "1.61.0",
+    "@mediabunny/flac-encoder": "1.61.0",
+    "@mediabunny/mp3-encoder": "1.61.0",
+    "exceljs": "4.4.0",
+    "fflate": "0.8.2",
+    "heic-to": "1.6.1",
+    "libimagequant-wasm": "0.3.0",
+    "mediabunny": "1.61.0",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.3.289",
+    "wawoff2": "2.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.0",
+    "@vitest/browser": "3.2.4",
+    "playwright": "1.56.1",
+    "typescript": "5.9.3",
+    "vite": "7.1.12",
+    "vitest": "3.2.4"
+  }
+}
