@@ -20,6 +20,20 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-ge
 sudo npm i -g pm2
 ```
 
+### LibreOffice network isolation (required)
+
+Documents are attacker-controlled and can fetch URLs (e.g. Calc `WEBSERVICE()`, linked images), which would expose the
+instance metadata service and internal ports. The server therefore runs LibreOffice under `unshare -rn` (no network) and
+**withholds the document/spreadsheet tools if that does not work** (a warning is logged at startup). On Ubuntu 24.04:
+
+```bash
+echo kernel.apparmor_restrict_unprivileged_userns=0 | sudo tee /etc/sysctl.d/60-userns.conf && sudo sysctl --system
+unshare -rn true && echo isolation-ok
+```
+
+Also set the instance to IMDSv2-required with hop limit 1. Plain `docker run` usually cannot `unshare` (default seccomp);
+run the container with a profile that allows user namespaces, or set `ALLOW_UNISOLATED_OFFICE=1` to accept the SSRF risk.
+
 Then clone to `/home/ubuntu/media-compressor`, run `npm ci && npm --prefix engine ci && npm --prefix web ci && npm run build`
 and `pm2 start "npm start" --name media-compressor && pm2 save && pm2 startup`.
 
@@ -43,4 +57,4 @@ AV1 on the server is capped at 720p and watched by an RSS limit (SVT-AV1 needs ~
 ## Environment
 
 `PORT`, `HOST`, `TRUST_PROXY` (set to `1` behind nginx/ALB so the per-IP rate limit sees real addresses),
-`JOBS_DIR`, `DATA_DIR`, `WEB_DIST`, `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`, `S3_BUCKET_NAME` (optional, off by default).
+`ALLOW_UNISOLATED_OFFICE` (1 = serve LibreOffice tools without network isolation; not recommended), `JOBS_DIR`, `DATA_DIR`, `WEB_DIST`, `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`, `S3_BUCKET_NAME` (optional, off by default).

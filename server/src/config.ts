@@ -42,6 +42,8 @@ export interface ServerConfig {
   timeoutScale: number;
   s3Bucket: string | null;
   s3Region: string;
+  /** Offer LibreOffice tools even when `unshare -rn` network isolation is unavailable (accepts SSRF risk). */
+  allowUnisolatedOffice: boolean;
   /** Python interpreter used for fontTools. */
   python: string;
   logLevel: "silent" | "error" | "info";
@@ -90,6 +92,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
     timeoutScale: num(env, "TIMEOUT_SCALE", 1, 0.001),
     s3Bucket: env.S3_BUCKET_NAME ? env.S3_BUCKET_NAME : null,
     s3Region: env.AWS_REGION || "us-east-1",
+    allowUnisolatedOffice: env.ALLOW_UNISOLATED_OFFICE === "1",
     python: env.PYTHON || "python3",
     logLevel: (env.LOG_LEVEL as ServerConfig["logLevel"]) || "info",
     ...overrides,

@@ -20,7 +20,7 @@ export interface Harness {
 
 const PY = process.platform === "win32" ? "python" : "python3";
 let binsPromise: Promise<Binaries> | null = null;
-export const getBins = () => (binsPromise ??= probeBinaries(PY).then((b) => (setPrlimit(b.prlimit), b)));
+export const getBins = () => (binsPromise ??= probeBinaries(PY, { allowUnisolatedOffice: process.env.ALLOW_UNISOLATED_OFFICE === "1" }).then((b) => (setPrlimit(b.prlimit), b)));
 
 export async function start(overrides: Partial<ServerConfig> = {}): Promise<Harness> {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mt-test-"));

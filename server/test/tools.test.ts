@@ -197,6 +197,9 @@ describe.skipIf(!bins.fonttools || !fontFile)("font-convert", () => {
 
 // ---- LibreOffice (heavy) ---------------------------------------------------------------------------
 describe.skipIf(!bins.soffice)("libreoffice tools (heavy)", () => {
+  it("network isolation is active (otherwise the tools are withheld, see office.ts)", () => {
+    expect(bins.officeSafe, "unshare -rn unavailable: run `sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0` or set ALLOW_UNISOLATED_OFFICE=1").toBe(true);
+  });
   it("txt → pdf; csv → xlsx → csv", async () => {
     const j = await runJob(h, "document-convert", [{ data: "Hello world\nSecond line\n", name: "note.txt" }], { format: "pdf" }, 180_000);
     expect(j.status, j.error).toBe("done");

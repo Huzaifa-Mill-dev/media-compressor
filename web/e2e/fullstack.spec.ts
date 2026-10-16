@@ -4,10 +4,31 @@ import fs from "node:fs";
 const rows = (page: Page) => page.locator("#queue-body tr");
 const add = (page: Page, files: { name: string; mimeType: string; buffer: Buffer }[]) => page.setInputFiles("#file-input", files);
 const txt = (name: string, body = "Hello from the E2E suite\nSecond line\n") => ({ name, mimeType: "text/plain", buffer: Buffer.from(body) });
-/** Smallest PDF that Ghostscript and qpdf both accept. */
-const MIN_PDF = Buffer.from(
-  "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R/Size 4>>\n%%EOF\n",
-);
+
+/** Minimal but fully valid PDF (correct xref offsets) that Ghostscript and qpdf both accept. */
+function makePdf(): Buffer {
+  const content = "BT /F1 24 Tf 20 100 Td (Hello PDF) Tj ET";
+  const objs = [
+    "<</Type/Catalog/Pages 2 0 R>>",
+    "<</Type/Pages/Kids[3 0 R]/Count 1>>",
+    "<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>",
+    `<</Length ${content.length}>>\nstream\n${content}\nendstream`,
+    "<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>",
+  ];
+  let out = "%PDF-1.4\n";
+  const offs: number[] = [];
+  objs.forEach((o, i) => {
+    offs.push(out.length);
+    out += `${i + 1} 0 obj\n${o}\nendobj\n`;
+  });
+  const xref = out.length;
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
+  for (const o of offs) out += `${String(o).padStart(10, "0")} 00000 n \n`;
+  out += `trailer\n<</Size ${objs.length + 1}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(out, "latin1");
+}
+const MIN_PDF = makePdf();
+const PNG_1PX = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
 
 let serverTools: string[] = [];
 test.beforeAll(async ({ request }) => {
@@ -34,7 +55,7 @@ test.describe("real server + built site", () => {
     await add(page, [txt("note.txt")]);
     await page.click("#run-btn");
     await expect(page.locator(".result-item")).toHaveCount(1, { timeout: 120_000 });
-    await expect(page.getByText("On our server").first()).toBeVisible();
+    await expect(page.locator(".result-item .runtime-server")).toBeVisible();
     const buf = await download(page);
     expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
   });
@@ -44,7 +65,9 @@ test.describe("real server + built site", () => {
     await page.goto("/compress-pdf");
     await add(page, [{ name: "tiny.pdf", mimeType: "application/pdf", buffer: MIN_PDF }]);
     await page.click("#run-btn");
-    await expect(page.locator(".result-item")).toHaveCount(1, { timeout: 120_000 });
+    await expect(rows(page).first()).toHaveAttribute("data-status", /done|error/, { timeout: 120_000 });
+    expect(await rows(page).first().innerText()).not.toMatch(/Failed/);
+    await expect(page.locator(".result-item")).toHaveCount(1);
     const buf = await download(page);
     expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
     expect(buf.length).toBeLessThanOrEqual(MIN_PDF.length);
@@ -84,8 +107,7 @@ test.describe("real server + built site", () => {
   test("wrong content for the extension is refused (PNG named .pdf)", async ({ page }) => {
     needs("pdf-compress");
     await page.goto("/compress-pdf");
-    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
-    await add(page, [{ name: "fake.pdf", mimeType: "application/pdf", buffer: png }]);
+    await add(page, [{ name: "fake.pdf", mimeType: "application/pdf", buffer: PNG_1PX }]);
     await page.click("#run-btn");
     await expect(rows(page).first()).toHaveAttribute("data-status", "error", { timeout: 30_000 });
   });
@@ -104,13 +126,12 @@ test.describe("real server + built site", () => {
     await page.route("**/api/**", (r) => r.abort());
     await page.goto("/convert-image");
     await page.selectOption("#opt-format", "webp");
-    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
-    await add(page, [{ name: "px.png", mimeType: "image/png", buffer: png }]);
+    await add(page, [{ name: "px.png", mimeType: "image/png", buffer: PNG_1PX }]);
     await page.click("#run-btn");
     await expect(page.locator(".result-item")).toHaveCount(1, { timeout: 60_000 });
   });
 
-  test("stats endpoint is aggregate-only and the badge/API never leak file names", async ({ page, request }) => {
+  test("stats endpoint is aggregate-only and the page never leaks file names", async ({ page, request }) => {
     const s = await (await request.get("/api/stats")).json();
     expect(Object.keys(s).sort()).toEqual(["totalJobs", "totalSavedBytes"]);
     await page.goto("/");

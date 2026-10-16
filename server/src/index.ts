@@ -7,8 +7,11 @@ import { availableTools } from "./tools.js";
 
 const cfg = loadConfig();
 const log = createLogger(cfg.logLevel);
-const bins = await probeBinaries(cfg.python);
+const bins = await probeBinaries(cfg.python, { allowUnisolatedOffice: cfg.allowUnisolatedOffice });
 setPrlimit(bins.prlimit);
+if (bins.soffice && !bins.netIsolation) {
+  log.warn(cfg.allowUnisolatedOffice ? "LibreOffice runs WITHOUT network isolation (ALLOW_UNISOLATED_OFFICE=1): documents can reach internal services" : "LibreOffice tools disabled: `unshare -rn` network isolation is unavailable (see server/README-deploy.md)");
+}
 const { app, close } = await createApp(cfg, bins);
 
 const server = app.listen(cfg.port, cfg.host, () => {

@@ -239,6 +239,8 @@ export function isToolId(v: unknown): v is ToolId {
 }
 
 export function toolAvailable(tool: ServerTool, bins: Binaries): boolean {
+  // Fail closed: never run LibreOffice on untrusted documents without network isolation.
+  if (tool.needs.includes("soffice") && !bins.officeSafe) return false;
   return tool.needs.every((n) => bins[n]);
 }
 

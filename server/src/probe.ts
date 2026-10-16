@@ -15,6 +15,11 @@ export interface Binaries {
   heifDec: string | null;
   /** `unshare -rn` works → LibreOffice runs without network access. */
   netIsolation: boolean;
+  /**
+   * LibreOffice may be offered: it needs network isolation (documents can fetch URLs, e.g. WEBSERVICE() or linked
+   * images → SSRF to cloud metadata / internal services) unless the operator explicitly accepts the risk.
+   */
+  officeSafe: boolean;
   /** ffmpeg encoders that are available (libx264, libx265, libvpx-vp9, libsvtav1, libopus, ...). */
   encoders: Set<string>;
   versions: Record<string, string>;
@@ -44,7 +49,7 @@ async function ok(cmd: string, args: string[], timeoutMs = 20_000): Promise<{ ok
 }
 
 /** Probe the binaries every tool depends on. Runs once at startup. */
-export async function probeBinaries(python = "python3"): Promise<Binaries> {
+export async function probeBinaries(python = "python3", opts: { allowUnisolatedOffice?: boolean } = {}): Promise<Binaries> {
   const [ffmpeg, ffprobe, gs, qpdf, soffice, fonttools, encs, unshare] = await Promise.all([
     which("ffmpeg") ? ok("ffmpeg", ["-hide_banner", "-version"]) : { ok: false, out: "" },
     which("ffprobe") ? ok("ffprobe", ["-hide_banner", "-version"]) : { ok: false, out: "" },
@@ -73,6 +78,7 @@ export async function probeBinaries(python = "python3"): Promise<Binaries> {
     prlimit: which("prlimit"),
     heifDec: which("heif-dec") ?? which("heif-convert"),
     netIsolation: unshare.ok,
+    officeSafe: unshare.ok || opts.allowUnisolatedOffice === true,
     encoders,
     versions: {
       ffmpeg: first(ffmpeg.out),
