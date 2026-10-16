@@ -32,8 +32,28 @@ jobs:
       - name: Build site and server
         run: npm run build
 
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            engine/package-lock.json
+            web/package-lock.json
+      - run: npm --prefix engine ci && npm --prefix web ci
+      - run: npx --prefix web playwright install --with-deps chromium
+      - name: Astro check
+        run: npm --prefix web run check
+      - name: Engine browser tests (real codecs in Chromium)
+        run: npm --prefix engine run test:browser
+      - name: Web Playwright tests
+        run: npm --prefix web test
+
   deploy:
-    needs: test
+    needs: [test, browser]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
