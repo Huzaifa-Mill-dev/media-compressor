@@ -3,8 +3,7 @@ name: Test and deploy to AWS EC2
 on:
   pull_request:
   push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   test:
