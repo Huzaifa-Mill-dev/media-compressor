@@ -64,6 +64,7 @@ export class JobManager extends EventEmitter {
   private reserved = 0;
   private timers = new Map<string, NodeJS.Timeout>();
   private closed = false;
+  private inflight = new Set<Promise<void>>();
 
   constructor(
     private cfg: ServerConfig,
@@ -140,10 +141,12 @@ export class JobManager extends EventEmitter {
       while (!this.closed && this.running[kind] < limit && this.waiting[kind].length) {
         const job = this.waiting[kind].shift()!;
         this.running[kind]++;
-        void this.execute(job).finally(() => {
+        const p: Promise<void> = this.execute(job).finally(() => {
+          this.inflight.delete(p);
           this.running[kind]--;
           this.pump();
         });
+        this.inflight.add(p);
         for (const j of this.waiting[kind]) this.emitChange(j); // queue positions moved
       }
     }
@@ -214,9 +217,9 @@ export class JobManager extends EventEmitter {
     job.expiresAt = Date.now() + this.cfg.outputTtlMs;
     this.emitChange(job);
     // Inputs are never needed again; failed/cancelled jobs have nothing to download.
-    void fs.rm(path.join(job.dir, "in"), { recursive: true, force: true });
-    void fs.rm(path.join(job.dir, "work"), { recursive: true, force: true });
-    if (status !== "done") void fs.rm(job.dir, { recursive: true, force: true });
+    void rmQuiet(path.join(job.dir, "in"));
+    void rmQuiet(path.join(job.dir, "work"));
+    if (status !== "done") void rmQuiet(job.dir);
     this.timers.set(job.id, setTimeout(() => this.remove(job.id), this.cfg.outputTtlMs).unref());
   }
 
@@ -227,7 +230,7 @@ export class JobManager extends EventEmitter {
     clearTimeout(this.timers.get(id));
     this.timers.delete(id);
     this.jobs.delete(id);
-    void fs.rm(job.dir, { recursive: true, force: true });
+    void rmQuiet(job.dir);
   }
 
   private emitChange(job: Job): void {
@@ -238,7 +241,11 @@ export class JobManager extends EventEmitter {
     this.closed = true;
     for (const t of this.timers.values()) clearTimeout(t);
     for (const j of this.jobs.values()) if (!isTerminal(j.status)) j.abort.abort();
-    await Promise.all([...this.jobs.values()].map((j) => fs.rm(j.dir, { recursive: true, force: true })));
+    await Promise.allSettled([...this.inflight]);
+    await Promise.all([...this.jobs.values()].map((j) => fs.rm(j.dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 })));
     this.jobs.clear();
   }
 }
+
+/** Best-effort recursive delete (a concurrent delete or a briefly locked file must never crash the server). */
+const rmQuiet = (p: string): Promise<void> => fs.rm(p, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }).catch(() => {});

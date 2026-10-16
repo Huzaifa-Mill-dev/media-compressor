@@ -95,6 +95,7 @@ export async function createApp(cfg: ServerConfig, bins: Binaries): Promise<App>
     const inDir = path.join(dir, "in");
     const inputs: ProcInput[] = [];
     const pending: Promise<void>[] = [];
+    const outs: fs.WriteStream[] = [];
     const fields: Record<string, string> = {};
     let total = 0;
     let failure: Error | null = null;
@@ -128,7 +129,10 @@ export async function createApp(cfg: ServerConfig, bins: Binaries): Promise<App>
     const settle = async () => {
       if (settled) return;
       settled = true;
-      await Promise.allSettled(pending);
+      if (failure) {
+        // Upload aborted: stop writing, release file handles, then clean up (never wait on a stalled stream).
+        await Promise.all(outs.map((o) => new Promise<void>((r) => (o.closed ? r() : (o.once("close", () => r()), o.destroy())))));
+      } else await Promise.allSettled(pending);
       try {
         if (failure) throw failure;
         const toolId = fields.tool;
@@ -168,7 +172,7 @@ export async function createApp(cfg: ServerConfig, bins: Binaries): Promise<App>
         if (!res.headersSent) res.status(202).json({ jobId: id });
       } catch (e) {
         release();
-        await fsp.rm(dir, { recursive: true, force: true });
+        await fsp.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
         if (!res.headersSent) next(e);
       }
     };
@@ -195,6 +199,7 @@ export async function createApp(cfg: ServerConfig, bins: Binaries): Promise<App>
       const p = (async () => {
         await fsp.mkdir(inDir, { recursive: true });
         const out = fs.createWriteStream(file, { flags: "wx", mode: 0o600 });
+        outs.push(out);
         stream.on("data", (c: Buffer) => {
           entry.size += c.length;
           total += c.length;

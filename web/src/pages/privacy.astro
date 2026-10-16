@@ -3,23 +3,52 @@ import Layout from "../layouts/Layout.astro";
 import { SITE_NAME } from "../lib/content";
 
 const title = `Privacy — how ${SITE_NAME} handles your files`;
-const description = "Files are processed on your device whenever possible. Server-assisted tools delete uploads within 30 minutes. No accounts, no tracking of file contents.";
+const description =
+  "Files are processed on your device whenever possible. Server-assisted tools delete uploads within 30 minutes. No accounts, no tracking of file contents.";
 ---
+
 <Layout title={title} description={description}>
   <header class="page-head">
     <h1>Privacy</h1>
-    <p class="lead">Short version: your files stay on your device unless a tool genuinely needs our server.</p>
+    <p class="lead">
+      Short version: your files stay on your device unless a tool genuinely
+      needs our server.
+    </p>
   </header>
   <article class="card prose">
     <h2>On your device (most tools)</h2>
-    <p>Image, video, audio, font, PDF merge/split and spreadsheet tools run in your browser using WebAssembly and WebCodecs. Your files are never sent anywhere; you can verify this in your browser’s network inspector.</p>
+    <p>
+      Image, video, audio, font, PDF merge/split and spreadsheet tools run in
+      your browser using WebAssembly and WebCodecs. Your files are never sent
+      anywhere; you can verify this in your browser’s network inspector.
+    </p>
     <h3>When a file is sent to our server</h3>
-    <p>Some jobs need software browsers cannot run: Office document conversion, PDF compression, TrueType/OpenType outline conversion, and files larger than your browser can handle. For these the file is uploaded over HTTPS, processed in an isolated temporary folder, and deleted automatically 30 minutes after the job finishes, or immediately if you cancel. Each result is reachable only through an unguessable job link.</p>
-    <p>Every result card tells you where the job ran: <strong>On your device</strong> or <strong>On our server</strong>.</p>
+    <p>
+      Some jobs need software browsers cannot run: Office document conversion,
+      PDF compression, TrueType/OpenType outline conversion, and files larger
+      than your browser can handle. For these the file is uploaded over HTTPS,
+      processed in an isolated temporary folder, and deleted automatically 30
+      minutes after the job finishes, or immediately if you cancel. Each result
+      is reachable only through an unguessable job link.
+    </p>
+    <p>
+      Every result card tells you where the job ran: <strong
+        >On your device</strong
+      > or <strong>On our server</strong>.
+    </p>
     <h3>What we store</h3>
-    <p>The server keeps only two aggregate numbers (jobs run and bytes saved) shown in the header. It never stores or displays file names.</p>
-    <p>Your recent-jobs history lives in this browser’s local storage only. Use “Clear history” on any tool page to delete it.</p>
+    <p>
+      The server keeps only two aggregate numbers (jobs run and bytes saved)
+      shown in the header. It never stores or displays file names.
+    </p>
+    <p>
+      Your recent-jobs history lives in this browser’s local storage only. Use
+      “Clear history” on any tool page to delete it.
+    </p>
     <h3>Cookies and third parties</h3>
-    <p>No cookies, no third-party scripts, no external fonts. Everything is served from this site.</p>
+    <p>
+      No cookies, no third-party scripts, no external fonts. Everything is
+      served from this site.
+    </p>
   </article>
 </Layout>
