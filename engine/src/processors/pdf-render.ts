@@ -11,8 +11,8 @@ let lib: Promise<PdfJs> | null = null;
 
 async function loadPdfJs(): Promise<PdfJs> {
   lib ??= (async () => {
-    const m = await import("pdfjs-dist/build/pdf.mjs");
-    const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+    const m = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const worker = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
     m.GlobalWorkerOptions.workerSrc = worker;
     return m as unknown as PdfJs;
   })();

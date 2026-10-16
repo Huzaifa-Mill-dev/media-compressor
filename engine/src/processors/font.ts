@@ -8,9 +8,8 @@ type Woff2Lib = { compress(b: Uint8Array): Promise<Uint8Array>; decompress(b: Ui
 let woff2: Promise<Woff2Lib> | null = null;
 async function loadWoff2(): Promise<Woff2Lib> {
   woff2 ??= (async () => {
-    const c = (await import("wawoff2/compress.js")) as unknown as { default: Woff2Lib["compress"] };
-    const d = (await import("wawoff2/decompress.js")) as unknown as { default: Woff2Lib["decompress"] };
-    return { compress: c.default, decompress: d.default };
+    const m = await import("woff2-encoder");
+    return { compress: m.compress, decompress: m.decompress };
   })();
   return woff2;
 }

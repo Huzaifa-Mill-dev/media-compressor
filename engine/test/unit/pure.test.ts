@@ -118,7 +118,7 @@ describe("WOFF1 vs fontTools", () => {
     const dir = mkdtempSync(join(tmpdir(), "woff-"));
     writeFileSync(join(dir, "o.woff"), woff);
     const py = "import sys;from fontTools.ttLib import TTFont;f=TTFont(sys.argv[1]);assert f.flavor=='woff';print(len(f.getGlyphOrder()), f['head'].checkSumAdjustment>0); f2=TTFont(sys.argv[2]);assert sorted(f.keys())==sorted(f2.keys())";
-    const out = execFileSync("python3", ["-I", "-c", py, join(dir, "o.woff"), join(__dirname, "../fixtures/font.ttf")]).toString();
+    const out = execFileSync(process.platform === "win32" ? "python" : "python3", [...(process.platform === "win32" ? [] : ["-I"]), "-c", py, join(dir, "o.woff"), join(__dirname, "../fixtures/font.ttf")]).toString();
     expect(out).toMatch(/True/);
     const back = decodeWoff(woff);
     expect(back.length).toBeGreaterThan(ttf.length * 0.99);

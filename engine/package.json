@@ -11,7 +11,7 @@
     "copy-assets": "node scripts/copy-assets.mjs",
     "test": "npm run test:unit && npm run test:browser",
     "test:unit": "vitest run --project unit",
-    "test:browser": "node scripts/make-fixtures.mjs && vitest run --project browser"
+    "test:browser": "node scripts/make-fixtures.mjs && node scripts/copy-assets.mjs test/.public && vitest run --project browser"
   },
   "dependencies": {
     "@ffmpeg/core": "0.12.10",
@@ -34,7 +34,7 @@
     "mediabunny": "1.61.0",
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.3.289",
-    "wawoff2": "2.0.1"
+    "woff2-encoder": "2.0.0"
   },
   "devDependencies": {
     "@types/node": "22.18.0",

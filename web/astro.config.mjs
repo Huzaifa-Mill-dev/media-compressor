@@ -31,7 +31,7 @@ const wasmLibs = [
   "@ffmpeg/util",
   "@ffmpeg/core",
   "@ffmpeg/core-mt",
-  "wawoff2",
+  "woff2-encoder",
   "mediabunny",
   "@mediabunny/aac-encoder",
   "@mediabunny/flac-encoder",
