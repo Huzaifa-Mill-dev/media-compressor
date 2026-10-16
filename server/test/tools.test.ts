@@ -98,11 +98,13 @@ describe.skipIf(!bins.ffmpeg || !bins.ffprobe)("ffmpeg tools", () => {
     expect(k.status, k.error).toBe("done");
     expect(k.outputs[0].size).toBeLessThan(wavFile.length / 4);
   });
-  it("rejects media without the wanted stream / garbage with a clean error", async () => {
-    const j = await runJob(h, "video-compress", [{ data: wavFile, name: "tone.mp4" }], {});
-    expect(["error"]).toContain(j.status); // wav bytes renamed .mp4 fails the magic-byte check or ffprobe
-    const r = await upload(h, "video-compress", [{ data: wavFile, name: "tone.mp4" }], {});
-    expect(r.status).toBe(400);
+  it("rejects wav bytes named .mp4 (400) and an audio-only mp4 passed to video-compress (job error)", async () => {
+    expect((await upload(h, "video-compress", [{ data: wavFile, name: "tone.mp4" }], {})).status).toBe(400);
+    const a = path.join(tmp, "audio-only.mp4");
+    ff(["-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:a", "aac", a]);
+    const j = await runJob(h, "video-compress", [{ data: fs.readFileSync(a), name: "audio-only.mp4" }], {});
+    expect(j.status).toBe("error");
+    expect(j.error).toMatch(/no video track/);
   });
   it("cancel kills the ffmpeg process", async () => {
     const big = path.join(tmp, "long.mp4");
