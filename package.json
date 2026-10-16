@@ -8,7 +8,7 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "build": "npm --prefix web ci && npm --prefix web run build && npm run build:server",
+    "build": "npm --prefix web run build && npm run build:server",
     "build:server": "tsc -p server/tsconfig.contracts.json && tsc -p server/tsconfig.json",
     "start": "node --max-old-space-size=384 server/dist/index.js",
     "dev": "npm run build:server && node --max-old-space-size=384 server/dist/index.js",

@@ -1,18 +1,43 @@
-name: Deploy to AWS EC2
+name: Test and deploy to AWS EC2
 
 on:
+  pull_request:
   push:
     branches:
       - main
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            engine/package-lock.json
+            web/package-lock.json
+      - name: Install native tools used by the server tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg ghostscript qpdf libreoffice-writer libreoffice-calc python3-fonttools python3-brotli fonts-dejavu fonts-liberation util-linux
+      - run: npm ci && npm --prefix engine ci && npm --prefix web ci
+      - name: Typecheck (server + engine)
+        run: npm run typecheck && npm --prefix engine run typecheck
+      - name: Engine unit tests
+        run: npm --prefix engine run test:unit
+      - name: Server tests (real binaries)
+        run: npm test
+      - name: Build site and server
+        run: npm run build
 
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -20,7 +45,10 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
             cd /home/ubuntu/media-compressor
             git pull origin main
-            npm install --production
-            pm2 restart media-compressor --update-env
+            export NODE_OPTIONS=--max-old-space-size=700
+            npm ci && npm --prefix engine ci && npm --prefix web ci
+            npm run build
+            pm2 restart media-compressor --update-env || pm2 start "npm start" --name media-compressor
