@@ -5,6 +5,7 @@ const headers = { "Cross-Origin-Opener-Policy": "same-origin", "Cross-Origin-Emb
 
 export default defineConfig({
   test: {
+    fileParallelism: false,
     projects: [
       { test: { name: "unit", environment: "node", include: ["test/unit/**/*.test.ts"] } },
       {
@@ -17,7 +18,6 @@ export default defineConfig({
           include: ["test/browser/**/*.test.ts"],
           testTimeout: 120_000,
           hookTimeout: 60_000,
-          fileParallelism: false,
           browser: {
             enabled: true,
             headless: true,
