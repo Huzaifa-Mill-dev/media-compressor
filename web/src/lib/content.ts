@@ -1,5 +1,5 @@
 /** Static marketing / SEO copy derived generically from the tool registry. */
-import type { Category, ToolDefinition } from "../../../engine/src/types.ts";
+import type { Category, ToolDefinition, ToolId } from "../../../engine/src/types.ts";
 
 export const SITE_NAME = "Media Toolkit";
 export const SITE_TAGLINE = "Efficient files, human touch";
@@ -81,8 +81,41 @@ export function howTo(tool: ToolDefinition): string[] {
   return steps;
 }
 
+const VERBS: Record<ToolId, string> = {
+  "image-compress": "Compress",
+  "image-convert": "Convert",
+  "video-compress": "Compress",
+  "video-convert": "Convert",
+  "video-to-audio": "Extract audio",
+  "audio-convert": "Convert",
+  "audio-compress": "Compress",
+  "font-convert": "Convert",
+  "pdf-compress": "Compress",
+  "pdf-merge": "Merge",
+  "pdf-split": "Split",
+  "pdf-to-images": "Convert",
+  "images-to-pdf": "Create PDF",
+  "document-convert": "Convert",
+  "spreadsheet-convert": "Convert",
+};
+
+/** Primary button label, e.g. "Compress" / "Merge". */
 export function actionLabel(tool: ToolDefinition): string {
-  return tool.title;
+  return VERBS[tool.id] ?? "Start";
+}
+
+/** "Compress Images Online — JPG, PNG…" → "Compress Images Online" (used for H1 and copy). */
+export function shortTitle(tool: ToolDefinition): string {
+  return tool.title.split(/\s+[—–-]\s+/)[0] ?? tool.title;
+}
+
+export function toolHref(tool: ToolDefinition): string {
+  return `/${tool.slug}`;
+}
+
+/** Serialise JSON for an inline <script> data block so it can never close the element. */
+export function jsonForScript(obj: unknown): string {
+  return JSON.stringify(obj).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 }
 
 export function faq(tool: ToolDefinition): { q: string; a: string }[] {
@@ -90,8 +123,8 @@ export function faq(tool: ToolDefinition): { q: string; a: string }[] {
   const server = tool.runtimes.includes("server");
   const items: { q: string; a: string }[] = [
     {
-      q: `Is ${tool.title} free?`,
-      a: `Yes. ${tool.title} is free to use, with no sign-up, no watermark and no daily limit.`,
+      q: `Is ${shortTitle(tool)} free?`,
+      a: `Yes. ${shortTitle(tool)} is free to use, with no sign-up, no watermark and no daily limit.`,
     },
     {
       q: "Are my files uploaded?",

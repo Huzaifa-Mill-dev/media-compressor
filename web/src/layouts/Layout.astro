@@ -1,7 +1,7 @@
 ---
 import "@fontsource-variable/inter/wght.css";
 import "../styles/global.css";
-import { SITE_NAME, SITE_TAGLINE, CATEGORIES } from "../lib/content";
+import { SITE_NAME, SITE_TAGLINE, CATEGORIES, jsonForScript } from "../lib/content";
 import { toolsByCategory } from "../lib/registry";
 
 interface Props {
@@ -21,10 +21,7 @@ const ogImage = new URL("/og.png", site).href;
 const path = cleanPath;
 const navCats = toolsByCategory().map((g) => g.category);
 
-/** Escape `<` so a JSON string can never close the <script> element. */
-function ldJson(obj: unknown): string {
-  return JSON.stringify(obj).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
-}
+const ldJson = jsonForScript;
 ---
 <!doctype html>
 <html lang="en">
@@ -70,7 +67,7 @@ function ldJson(obj: unknown): string {
           <nav class="nav" aria-label="Tool categories">
             {
               navCats.map((c) => (
-                <a href={`/${c}`} aria-current={path === `/${c}` ? "page" : undefined}>
+                <a href={`/tools/${c}`} aria-current={path === `/tools/${c}` ? "page" : undefined}>
                   {CATEGORIES[c].label}
                 </a>
               ))
