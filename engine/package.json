@@ -10,7 +10,7 @@
     "fixtures": "node scripts/make-fixtures.mjs",
     "copy-assets": "node scripts/copy-assets.mjs",
     "test": "npm run test:unit && npm run test:browser",
-    "test:unit": "vitest run --project unit",
+    "test:unit": "node scripts/make-fixtures.mjs && vitest run --project unit",
     "test:browser": "node scripts/make-fixtures.mjs && node scripts/copy-assets.mjs test/.public && vitest run --project browser"
   },
   "dependencies": {
