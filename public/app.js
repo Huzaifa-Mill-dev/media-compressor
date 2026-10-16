@@ -95,6 +95,15 @@
     return `${min}m ${remSec}s`;
   }
 
+  // Escape user-controlled text (filenames, server errors) before it touches innerHTML
+  function esc(value) {
+    return String(value ?? "").replace(/[&<>"'`]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "`": "&#96;" })[c]);
+  }
+  function safeUrl(url) {
+    const u = String(url || "");
+    return /^(https:\/\/|\/api\/|blob:)/.test(u) ? esc(u) : "#";
+  }
+
   function show(el) { if (el) el.classList.remove("hidden"); }
   function hide(el) { if (el) el.classList.add("hidden"); }
 
@@ -124,8 +133,8 @@
             : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary); vertical-align:-2px; margin-right:6px; flex-shrink:0;" title="Video"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`;
 
           const nameCellHtml = item.s3Url
-            ? `<span style="display:inline-flex; align-items:center;">${typeIcon}<a href="${item.s3Url}" target="_blank" rel="noopener noreferrer" style="color:var(--primary); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:0.35rem;" title="Open permanent S3 file">${item.originalName} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a></span>`
-            : `<span style="display:inline-flex; align-items:center; font-weight:600; color:var(--text);">${typeIcon}${item.originalName}</span>`;
+            ? `<span style="display:inline-flex; align-items:center;">${typeIcon}<a href="${safeUrl(item.s3Url)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:0.35rem;" title="Open permanent S3 file">${esc(item.originalName)} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a></span>`
+            : `<span style="display:inline-flex; align-items:center; font-weight:600; color:var(--text);">${typeIcon}${esc(item.originalName)}</span>`;
 
           const savingsFormatted = item.savings !== undefined ? `${Number(item.savings).toFixed(1)}%` : "—";
           const scoreFormatted = item.qualityScore ? `${Number(item.qualityScore).toFixed(1)} / 100` : "—";
@@ -133,7 +142,7 @@
 
           tr.innerHTML = `
             <td>${nameCellHtml}</td>
-            <td><span class="pill-badge ${profileBadgeClass}" style="position:static; display:inline-block;">${item.profile || "standard"}</span></td>
+            <td><span class="pill-badge ${profileBadgeClass}" style="position:static; display:inline-block;">${esc(item.profile || "standard")}</span></td>
             <td>${formatSize(item.originalSize)}</td>
             <td style="color:var(--green); font-weight:600;">${formatSize(item.compressedSize)}</td>
             <td style="color:var(--green); font-weight:700;">-${savingsFormatted}</td>
@@ -299,7 +308,7 @@
           statusBadge = `
             <div class="status-error-container">
               <span class="status-badge error">Failed</span>
-              <p class="status-error-text">${item.error || "Compression failed"}</p>
+              <p class="status-error-text">${esc(item.error || "Compression failed")}</p>
             </div>
           `;
           break;
@@ -319,7 +328,7 @@
         <td>
           <div style="display:flex; align-items:center; gap:0.75rem;">
             <div class="table-thumb">${thumbHtml}</div>
-            <div class="file-name-cell" title="${item.file.name}">${item.file.name}</div>
+            <div class="file-name-cell" title="${esc(item.file.name)}">${esc(item.file.name)}</div>
           </div>
         </td>
         <td>${item.type === "image" ? "Image" : "Video"}</td>
@@ -828,7 +837,7 @@
               <span>${formatSize(data.compressedSize)} · ${data.outputWidth || data.originalWidth}×${data.outputHeight || data.originalHeight}</span>
             </div>
             <div class="side-player-body image-box">
-              <img src="${data.previewUrl}" alt="Compressed Image" />
+              <img src="${safeUrl(data.previewUrl)}" alt="Compressed Image" />
             </div>
           </div>
         </div>
@@ -852,7 +861,7 @@
               <span>${formatSize(data.compressedSize)} · ${data.outputWidth}×${data.outputHeight}</span>
             </div>
             <div class="side-player-body">
-              <video id="comp-vid-${cardId}" src="${data.previewUrl}" controls playsinline ${data.posterUrl ? `poster="${data.posterUrl}"` : ""}></video>
+              <video id="comp-vid-${cardId}" src="${safeUrl(data.previewUrl)}" controls playsinline ${data.posterUrl ? `poster="${safeUrl(data.posterUrl)}"` : ""}></video>
             </div>
           </div>
         </div>
@@ -861,7 +870,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Play / Pause Both in Sync
           </button>
-          <button type="button" class="btn-expand-preview" onclick="openFullscreenSideBySide('${data.originalName}', '${originalUrl}', '${data.previewUrl}', '${dimsText}')">
+          <button type="button" class="btn-expand-preview" data-title="${esc(data.originalName)}" data-orig="${safeUrl(originalUrl)}" data-comp="${safeUrl(data.previewUrl)}" data-dims="${esc(dimsText)}" onclick="openFullscreenSideBySide(this.dataset.title, this.dataset.orig, this.dataset.comp, this.dataset.dims)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="15 3 21 3 21 9"></polyline>
               <polyline points="9 21 3 21 3 15"></polyline>
@@ -899,7 +908,7 @@
     }
 
     if (data.s3Url) {
-      detailRows.push(["S3 Permanent Link", `<a href="${data.s3Url}" target="_blank" rel="noopener noreferrer" style="color:var(--primary); word-break:break-all;">${data.s3Url}</a>`]);
+      detailRows.push(["S3 Permanent Link", `<a href="${safeUrl(data.s3Url)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary); word-break:break-all;">${esc(data.s3Url)}</a>`]);
     }
 
     let detailsTableHtml = "";
@@ -910,7 +919,7 @@
     if (data.srcset && data.srcset.length > 0) {
       detailsTableHtml += `<tr><td colspan="2" style="font-weight:600; padding-top:0.75rem;">Responsive srcset generated:</td></tr>`;
       data.srcset.forEach((s) => {
-        detailsTableHtml += `<tr><td>${s.width}w (${formatSize(s.size)})</td><td><a href="${s.downloadUrl}" download="${s.filename}" style="color:var(--primary-hover)">Download</a></td></tr>`;
+        detailsTableHtml += `<tr><td>${s.width}w (${formatSize(s.size)})</td><td><a href="${safeUrl(s.downloadUrl)}" download="${esc(s.filename)}" style="color:var(--primary-hover)">Download</a></td></tr>`;
       });
     }
 
@@ -919,12 +928,12 @@
     card.className = "result-item";
     card.innerHTML = `
       <div class="result-header">
-        <div class="result-filename">${data.originalName} &rarr; ${finalDownloadName}</div>
+        <div class="result-filename">${esc(data.originalName)} &rarr; ${esc(finalDownloadName)}</div>
         <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
           ${timeBadgeHtml}
           ${qualityBadgeHtml}
           ${data.s3Url ? `
-            <button type="button" class="btn-s3" onclick="copyS3Link('${data.s3Url}', this)" title="Copy permanent AWS S3 link">
+            <button type="button" class="btn-s3" data-url="${safeUrl(data.s3Url)}" onclick="copyS3Link(this.dataset.url, this)" title="Copy permanent AWS S3 link">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
@@ -932,7 +941,7 @@
               <span>Copy S3 Link</span>
             </button>
           ` : ""}
-          <a href="${data.downloadUrl}" download="${finalDownloadName}" class="btn-download" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; flex: 0 0 auto;">Download</a>
+          <a href="${safeUrl(data.downloadUrl)}" download="${esc(finalDownloadName)}" class="btn-download" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; flex: 0 0 auto;">Download</a>
         </div>
       </div>
 
@@ -1032,6 +1041,20 @@
     }
 
     card.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+
+  // ─── Render Error Card ────────────────────────────────────────────────────
+  function appendErrorCard(fileName, message) {
+    const card = document.createElement("div");
+    card.className = "result-item";
+    card.innerHTML = `
+      <div class="result-header">
+        <div class="result-filename">${esc(fileName)}</div>
+        <span class="status-badge error">Failed</span>
+      </div>
+      <p class="status-error-text">${esc(message)}</p>
+    `;
+    resultsContainer.appendChild(card);
   }
 
   // ─── Play / Pause Both in Sync ────────────────────────────────────────────

@@ -12,7 +12,7 @@ const multer = require("multer");
 const sharp = require("sharp");
 const path = require("path");
 const fs = require("fs");
-const { execSync, exec } = require("child_process");
+const { execSync, execFile } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
 
 // ─── FFmpeg Path Resolution ──────────────────────────────────────────────────
@@ -243,12 +243,27 @@ function logHistory(entry) {
     });
 }
 
+// Only allow short alphanumeric extensions so user-supplied names never reach a shell or path
+function safeExt(name) {
+  const ext = path.extname(String(name || "")).toLowerCase();
+  return /^\.[a-z0-9]{1,10}$/.test(ext) ? ext : "";
+}
+
+// Resolve a requested output filename to a path inside output/ (blocks ../ traversal)
+function resolveOutputFile(name) {
+  const base = path.basename(String(name || ""));
+  if (!base || base !== name || base.startsWith(".")) return null;
+  const outDir = path.join(__dirname, "output");
+  const fp = path.join(outDir, base);
+  return fp.startsWith(outDir + path.sep) ? fp : null;
+}
+
 // Multer config (500MB max)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, "uploads")),
   filename: (req, file, cb) => {
     const unique = Date.now() + "-" + Math.round(Math.random() * 1e6);
-    cb(null, unique + path.extname(file.originalname));
+    cb(null, unique + safeExt(file.originalname));
   },
 });
 const upload = multer({
@@ -604,9 +619,9 @@ function extractPosterFrame(videoPath, posterPath) {
 function calculateQualityScore(originalPath, compressedPath) {
   return new Promise((resolve) => {
     const ssimLog = compressedPath + ".ssim.log";
-    const cmd = `"${ffmpegPath}" -threads 1 -y -i "${compressedPath}" -i "${originalPath}" -filter_complex "[0:v]fps=1,scale=480:-2[v0];[1:v]fps=1,scale=480:-2[v1];[v0][v1]ssim=stats_file='${ssimLog}'" -f null -`;
+    const args = ["-threads", "1", "-y", "-i", compressedPath, "-i", originalPath, "-filter_complex", `[0:v]fps=1,scale=480:-2[v0];[1:v]fps=1,scale=480:-2[v1];[v0][v1]ssim=stats_file='${ssimLog}'`, "-f", "null", "-"];
 
-    exec(cmd, { timeout: 25000 }, (err) => {
+    execFile(ffmpegPath, args, { timeout: 25000 }, (err) => {
       if (err) {
         console.warn(`⚠️  [Scoring Notice] Video SSIM evaluation skipped/timed out: ${err.message}`);
       }
@@ -640,9 +655,9 @@ function calculateImageQualityScore(originalPath, compressedPath) {
   return new Promise((resolve) => {
     const ssimLog = compressedPath + ".imgssim.log";
     // Scale reference original to match compressed dimensions (rw:rh), format both to yuv420p for valid SSIM comparison
-    const cmd = `"${ffmpegPath}" -threads 1 -y -i "${compressedPath}" -i "${originalPath}" -filter_complex "[0:v]scale='min(1920,iw)':-2,format=yuv420p[v0];[1:v][v0]scale=rw:rh,format=yuv420p[v1];[v0][v1]ssim=stats_file='${ssimLog}'" -f null -`;
+    const args = ["-threads", "1", "-y", "-i", compressedPath, "-i", originalPath, "-filter_complex", `[0:v]scale='min(1920,iw)':-2,format=yuv420p[v0];[1:v][v0]scale=rw:rh,format=yuv420p[v1];[v0][v1]ssim=stats_file='${ssimLog}'`, "-f", "null", "-"];
 
-    exec(cmd, { timeout: 15000 }, (err) => {
+    execFile(ffmpegPath, args, { timeout: 15000 }, (err) => {
       let score = 98.0;
       if (err) {
         console.warn(`⚠️  [Scoring Notice] Image SSIM evaluation warning: ${err.message}`);
@@ -971,19 +986,20 @@ app.get("/api/history", (req, res) => {
 
 // Serve compressed file for download (preserves original user filename)
 app.get("/api/download/:filename", (req, res) => {
-  const filePath = path.join(__dirname, "output", req.params.filename);
-  if (!fs.existsSync(filePath))
+  const filePath = resolveOutputFile(req.params.filename);
+  if (!filePath || !fs.existsSync(filePath))
     return res.status(404).json({ error: "File not found" });
 
-  const downloadName = req.query.name || req.params.filename;
+  const downloadName = path.basename(String(req.query.name || req.params.filename)).replace(/[\x00-\x1f"\\]/g, "_");
   res.download(filePath, downloadName);
 });
 
 // Serve file for preview
 app.get("/api/preview/:filename", (req, res) => {
-  const filePath = path.join(__dirname, "output", req.params.filename);
-  if (!fs.existsSync(filePath))
+  const filePath = resolveOutputFile(req.params.filename);
+  if (!filePath || !fs.existsSync(filePath))
     return res.status(404).json({ error: "File not found" });
+  res.set("X-Content-Type-Options", "nosniff");
   res.sendFile(filePath);
 });
 
