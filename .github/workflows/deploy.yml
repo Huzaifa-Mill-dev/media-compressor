@@ -28,7 +28,7 @@ jobs:
       - name: Engine unit tests
         run: npm --prefix engine run test:unit
       - name: Server tests (real binaries)
-        run: npm test
+        run: npm test -- --reporter=default --reporter=github-actions
       - name: Build site and server
         run: npm run build
 
