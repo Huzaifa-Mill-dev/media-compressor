@@ -17,7 +17,7 @@
     "sourceMap": true,
     "verbatimModuleSyntax": true,
     "paths": {
-      "@contracts/*": ["./build/contracts/*"]
+      "@contracts/*": ["./build/contracts/*.d.ts"]
     }
   },
   "include": ["src/**/*.ts"]

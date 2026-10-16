@@ -6,3 +6,5 @@ data/*.json
 .DS_Store
 *.bak
 engine/test/browser/__screenshots__/
+server/build/
+server/dist/

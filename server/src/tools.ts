@@ -243,7 +243,7 @@ export function toolAvailable(tool: ServerTool, bins: Binaries): boolean {
 }
 
 export function availableTools(bins: Binaries): ToolId[] {
-  return (Object.keys(SERVER_TOOLS) as ToolId[]).filter((id) => toolAvailable(SERVER_TOOLS[id], bins));
+  return (Object.keys(SERVER_TOOLS) as ToolId[]).filter((id) => toolAvailable(SERVER_TOOLS[id]!, bins));
 }
 
 /** Validate `options` against the tool's allowlist and fill defaults. Throws HttpError(400). */
