@@ -5,3 +5,4 @@ data/*.json
 *.log
 .DS_Store
 *.bak
+engine/test/browser/__screenshots__/
