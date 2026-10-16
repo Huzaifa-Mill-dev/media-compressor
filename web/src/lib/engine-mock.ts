@@ -19,12 +19,12 @@ import type {
   JobOutput,
   JobResult,
   Options,
-  OptionField,
   RunHandlers,
   Runtime,
   ToolDefinition,
   ToolId,
 } from "../../../engine/src/types.ts";
+import { tools } from "./registry";
 
 export interface MockConfig {
   stepMs?: number;
@@ -36,129 +36,8 @@ export interface MockConfig {
   runtime?: Runtime;
 }
 
-const quality: OptionField = { type: "range", key: "quality", label: "Quality", min: 1, max: 100, default: 80 };
-
-/** A registry covering every ToolId and every OptionField type (incl. showIf). */
-export const mockTools: ToolDefinition[] = [
-  {
-    id: "image-compress",
-    category: "image",
-    slug: "compress-image",
-    title: "Compress Image",
-    description: "Shrink PNG, JPEG, WebP and AVIF images right in your browser.",
-    accepts: ["png", "jpg", "jpeg", "webp", "avif", "gif"],
-    outputs: ["webp", "avif", "jpeg", "png"],
-    multiInput: false,
-    runtimes: ["browser", "server"],
-    browserMaxBytes: 50 * 1024 * 1024,
-    options: [
-      {
-        type: "select",
-        key: "format",
-        label: "Output format",
-        default: "webp",
-        choices: [
-          { value: "webp", label: "WebP" },
-          { value: "avif", label: "AVIF" },
-          { value: "jpeg", label: "JPEG" },
-          { value: "png", label: "PNG" },
-        ],
-      },
-      { ...quality, showIf: { key: "format", equals: ["webp", "avif", "jpeg"] } } as OptionField,
-      { type: "toggle", key: "lossless", label: "Lossless", default: false, help: "Bigger files, perfect pixels." },
-      { type: "number", key: "maxWidth", label: "Max width", min: 1, max: 16384, placeholder: "e.g. 1920" },
-      { type: "text", key: "suffix", label: "Filename suffix", placeholder: "-min", default: "" },
-    ],
-  },
-  {
-    id: "image-convert",
-    category: "image",
-    slug: "convert-image",
-    title: "Convert Image",
-    description: "Convert images between PNG, JPEG, WebP and AVIF.",
-    accepts: ["png", "jpg", "jpeg", "webp", "avif", "gif", "bmp", "heic"],
-    outputs: ["png", "jpeg", "webp", "avif"],
-    multiInput: false,
-    runtimes: ["browser"],
-    options: [
-      {
-        type: "select",
-        key: "format",
-        label: "Convert to",
-        default: "png",
-        choices: [
-          { value: "png", label: "PNG" },
-          { value: "jpeg", label: "JPEG" },
-          { value: "webp", label: "WebP" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "video-compress",
-    category: "video",
-    slug: "compress-video",
-    title: "Compress Video",
-    description: "Make MP4, MOV and WebM videos smaller without visible quality loss.",
-    accepts: ["mp4", "mov", "webm", "mkv"],
-    outputs: ["mp4", "webm"],
-    multiInput: false,
-    runtimes: ["browser", "server"],
-    options: [
-      {
-        type: "select",
-        key: "profile",
-        label: "Profile",
-        default: "quality-safe",
-        choices: [
-          { value: "quality-safe", label: "Quality-Safe" },
-          { value: "web-stream", label: "Web Stream" },
-          { value: "av1", label: "AV1 Ultra" },
-          { value: "custom", label: "Custom" },
-        ],
-      },
-      { type: "toggle", key: "stripAudio", label: "Strip audio track", default: false },
-      { type: "range", key: "crf", label: "CRF", min: 14, max: 36, default: 23, showIf: { key: "profile", equals: ["custom"] } },
-      {
-        type: "select",
-        key: "resolution",
-        label: "Resolution",
-        default: "original",
-        showIf: { key: "profile", equals: ["custom"] },
-        choices: [
-          { value: "original", label: "Original" },
-          { value: "720p", label: "720p" },
-        ],
-      },
-    ],
-  },
-  simple("video-convert", "video", "convert-video", "Convert Video", ["mp4", "mov", "webm", "mkv", "avi"], ["mp4", "webm"]),
-  simple("video-to-audio", "video", "video-to-audio", "Video to Audio", ["mp4", "mov", "webm"], ["mp3", "m4a"]),
-  simple("audio-convert", "audio", "convert-audio", "Convert Audio", ["mp3", "wav", "ogg", "flac", "m4a"], ["mp3", "wav", "ogg"]),
-  simple("audio-compress", "audio", "compress-audio", "Compress Audio", ["mp3", "wav", "ogg", "flac", "m4a"], ["mp3", "ogg"]),
-  simple("font-convert", "font", "convert-font", "Convert Font", ["ttf", "otf", "woff", "woff2"], ["woff2", "woff", "ttf"]),
-  { ...simple("pdf-compress", "pdf", "compress-pdf", "Compress PDF", ["pdf"], []), runtimes: ["server"] },
-  { ...simple("pdf-merge", "pdf", "merge-pdf", "Merge PDF", ["pdf"], []), multiInput: true },
-  simple("pdf-split", "pdf", "split-pdf", "Split PDF", ["pdf"], []),
-  simple("pdf-to-images", "pdf", "pdf-to-images", "PDF to Images", ["pdf"], ["png", "jpeg"]),
-  { ...simple("images-to-pdf", "pdf", "images-to-pdf", "Images to PDF", ["png", "jpg", "jpeg", "webp"], []), multiInput: true },
-  { ...simple("document-convert", "document", "convert-document", "Convert Document", ["docx", "doc", "odt", "rtf"], ["pdf", "docx"]), runtimes: ["server"] },
-  simple("spreadsheet-convert", "spreadsheet", "convert-spreadsheet", "Convert Spreadsheet", ["xlsx", "csv", "ods"], ["csv", "xlsx", "json"]),
-];
-
-function simple(
-  id: ToolId,
-  category: ToolDefinition["category"],
-  slug: string,
-  title: string,
-  accepts: string[],
-  outputs: string[],
-): ToolDefinition {
-  const options: OptionField[] = outputs.length
-    ? [{ type: "select", key: "format", label: "Output format", default: outputs[0]!, choices: outputs.map((o) => ({ value: o, label: o.toUpperCase() })) }]
-    : [];
-  return { id, category, slug, title, description: `${title} online for free.`, accepts, outputs, multiInput: false, runtimes: ["browser", "server"], options };
-}
+/** The mock serves the real registry, so forms/SEO and tests exercise the genuine option schemas. */
+export const mockTools: ToolDefinition[] = tools;
 
 function cfg(): MockConfig {
   return ((globalThis as unknown as { __MT_MOCK__?: MockConfig }).__MT_MOCK__ ?? {}) as MockConfig;

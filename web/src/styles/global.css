@@ -1829,3 +1829,27 @@ dialog::backdrop {
     padding: 0.3rem 0.6rem;
   }
 }
+
+/* ─── Workspace additions ─── */
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+.option-help.centered {
+  text-align: center;
+  margin-top: 0.6rem;
+}
+.drop-formats .drop-limits {
+  flex-basis: 100%;
+}
+.progress-meta .btn-secondary {
+  padding: 0.25rem 0.7rem;
+}
+.centered-head {
+  text-align: center;
+}
+.centered-head .lead {
+  margin-inline: auto;
+}

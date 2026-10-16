@@ -1,0 +1,11 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { SITE_NAME } from "../lib/content";
+---
+<Layout title={`Page not found | ${SITE_NAME}`} description="That page does not exist. Browse all tools." noindex>
+  <header class="page-head centered-head">
+    <h1>Page not found</h1>
+    <p class="lead">The page you are looking for does not exist or has moved.</p>
+    <p class="hero-cta"><a class="btn-download" href="/">Browse all tools</a></p>
+  </header>
+</Layout>

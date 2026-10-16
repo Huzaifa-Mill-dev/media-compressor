@@ -33,3 +33,10 @@ export class TimeoutError extends Error {
 }
 
 export const badRequest = (msg: string, code?: string) => new HttpError(400, msg, code);
+
+export class MemoryLimitError extends Error {
+  constructor(message = "The job needed more memory than this server can spare") {
+    super(message);
+    this.name = "MemoryLimitError";
+  }
+}

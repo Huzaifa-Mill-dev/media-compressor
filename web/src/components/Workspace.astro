@@ -1,0 +1,160 @@
+---
+import type { ToolDefinition } from "../../../engine/src/types.ts";
+import { actionLabel, jsonForScript, minFiles } from "../lib/content";
+import { ICONS } from "../lib/dom";
+import { formatSize } from "../lib/format";
+import Icon from "./Icon.astro";
+
+interface Props {
+  tool: ToolDefinition;
+}
+const { tool } = Astro.props;
+const accept = tool.accepts.map((e) => `.${e}`).join(",");
+const verb = actionLabel(tool);
+const needed = minFiles(tool);
+const multi = tool.multiInput;
+---
+<div id="workspace" class="workspace" data-tool={tool.id} data-multi={multi ? "1" : "0"}>
+  <script type="application/json" id="tool-data" set:html={jsonForScript(tool)} />
+  <noscript><p class="notice warn">This tool needs JavaScript to run. Nothing is uploaded until you choose a file.</p></noscript>
+
+  <section class="card upload-card" aria-label="Add files">
+    <button type="button" class="drop-zone" id="drop-zone" aria-describedby="drop-hint drop-limits">
+      <span class="drop-icon"><Icon paths={["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M17 8l-5-5-5 5", "M12 3v12"]} size={48} strokeWidth={1.5} /></span>
+      <span class="drop-text">{multi ? "Drop files to combine" : "Drop files here"}</span>
+      <span class="drop-subtext" id="drop-hint">or click to browse · paste with Ctrl/⌘ V</span>
+      <span class="drop-formats">
+        {tool.accepts.map((e) => <span class="format-chip">{e.toUpperCase()}</span>)}
+        <span class="drop-limits" id="drop-limits">
+          {tool.browserMaxBytes ? `On-device up to ${formatSize(tool.browserMaxBytes)} per file. ` : ""}{multi ? "Files are combined in the order shown below." : "Add as many files as you like."}
+        </span>
+      </span>
+    </button>
+    <input type="file" id="file-input" accept={accept} multiple hidden tabindex="-1" aria-label={`Choose ${tool.accepts.join(", ")} files`} />
+
+    <div id="notices"></div>
+
+    <div class="queue" id="queue" hidden>
+      <div class="queue-scroll">
+        <table class="file-list-table" id="queue-table">
+          <caption class="visually-hidden">Files in the queue</caption>
+          <thead>
+            <tr>
+              {multi && <th scope="col">Order</th>}
+              <th scope="col">File</th>
+              <th scope="col" class="col-type">Type</th>
+              <th scope="col">Size</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="queue-body"></tbody>
+        </table>
+      </div>
+      <div class="queue-actions">
+        <span class="queue-summary" id="queue-summary"></span>
+        <button type="button" class="btn-secondary danger" id="clear-btn">Clear all</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card options-card" aria-label="Options">
+    <h2 class="card-title" id="options-title">Options</h2>
+    <div id="options-mount"></div>
+    <div id="server-notice"></div>
+    <button type="button" class="btn-compress" id="run-btn" disabled>
+      <span class="btn-text">{verb}</span>
+      <span class="btn-loader" hidden><span class="spinner"></span> Working…</span>
+    </button>
+    {multi && needed > 1 && <p class="option-help centered">Add at least {needed} files.</p>}
+  </section>
+
+  <section class="card progress-card" id="progress-card" aria-label="Progress" hidden>
+    <div class="progress-header">
+      <div class="progress-status-info">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span class="progress-stage-title" id="progress-title">Working…</span>
+      </div>
+      <div class="progress-meta">
+        <span class="progress-timer" id="progress-timer" aria-label="Elapsed time">00:00</span>
+        <span class="progress-percent" id="progress-percent">0%</span>
+        <button type="button" class="btn-secondary danger" id="cancel-all-btn">Cancel all</button>
+      </div>
+    </div>
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-footer">
+      <p class="progress-text" id="progress-text">Preparing…</p>
+      <span class="queue-summary" id="progress-sub"></span>
+    </div>
+    <p class="visually-hidden" id="progress-live" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card results-card" id="results-card" aria-label="Results" hidden>
+    <div class="results-header-bar">
+      <h2 class="card-title">Results</h2>
+      <div class="badges">
+        <button type="button" class="btn-secondary" id="zip-all-btn" hidden>Download all (ZIP)</button>
+        <button type="button" class="btn-secondary" id="clear-results-btn">Clear results</button>
+      </div>
+    </div>
+    <div id="results"></div>
+  </section>
+</div>
+
+<div class="visually-hidden" id="sr-live" role="status" aria-live="polite"></div>
+
+<details class="card history-card" id="history">
+  <summary>
+    <h2><Icon paths={ICONS.clock} size={18} /> Your history <span class="badge" id="history-count">0 saved</span></h2>
+    <span class="chev"><Icon paths={ICONS.down} size={18} /></span>
+  </summary>
+  <div id="history-body"></div>
+  <div class="history-footer">
+    <span>Stored only in this browser (last 50 jobs). Nobody else can see it.</span>
+    <button type="button" class="btn-secondary danger" id="history-clear" disabled>Clear history</button>
+  </div>
+</details>
+
+<dialog id="warning-dialog" aria-labelledby="warning-title">
+  <form method="dialog" class="warning-modal-container">
+    <div class="warning-modal-header">
+      <span class="warning-modal-title" id="warning-title"><Icon paths={["m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z", "M12 9v4", "M12 17h.01"]} size={20} /> Work in progress</span>
+      <button type="submit" value="keep" class="btn-modal-close" aria-label="Close"><Icon paths={ICONS.x} size={16} /></button>
+    </div>
+    <div class="warning-modal-body">
+      <p class="warning-msg-main">Your files are still being processed.</p>
+      <p class="warning-msg-detail" id="warning-desc"></p>
+    </div>
+    <div class="warning-modal-footer">
+      <button type="submit" value="keep" class="btn-primary" autofocus>Keep working</button>
+      <button type="submit" value="abort" class="btn-danger-outline" id="warning-abort">Cancel anyway</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="compare-dialog" aria-labelledby="compare-title">
+  <div class="video-modal-container">
+    <div class="video-modal-header">
+      <div class="modal-info">
+        <span class="modal-title" id="compare-title">Side-by-side comparison</span>
+        <span class="queue-summary" id="compare-dims"></span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="compare-play"><Icon paths={ICONS.play} size={14} /><span>Play both in sync</span></button>
+        <form method="dialog"><button type="submit" class="btn-modal-close" aria-label="Close comparison"><Icon paths={ICONS.x} size={16} /></button></form>
+      </div>
+    </div>
+    <div class="video-modal-body">
+      <div class="modal-side-by-side">
+        <div class="modal-player-box"><div class="modal-player-header">Original</div><video id="compare-orig" controls playsinline muted></video></div>
+        <div class="modal-player-box"><div class="modal-player-header">Result</div><video id="compare-comp" controls playsinline></video></div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  import "../scripts/workspace/main.ts";
+</script>

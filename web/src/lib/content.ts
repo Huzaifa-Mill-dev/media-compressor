@@ -99,6 +99,11 @@ const VERBS: Record<ToolId, string> = {
   "spreadsheet-convert": "Convert",
 };
 
+/** Minimum number of files a job needs (merging one PDF is meaningless). */
+export function minFiles(tool: ToolDefinition): number {
+  return tool.id === "pdf-merge" ? 2 : 1;
+}
+
 /** Primary button label, e.g. "Compress" / "Merge". */
 export function actionLabel(tool: ToolDefinition): string {
   return VERBS[tool.id] ?? "Start";

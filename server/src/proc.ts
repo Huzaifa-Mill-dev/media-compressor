@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { AbortError, TimeoutError } from "./errors.js";
+import fs from "node:fs";
+import { AbortError, MemoryLimitError, TimeoutError } from "./errors.js";
 
 export interface RunOptions {
   cwd?: string;
@@ -7,8 +8,13 @@ export interface RunOptions {
   signal?: AbortSignal;
   /** Hard wall-clock limit; the whole process group is SIGKILLed when exceeded. */
   timeoutMs?: number;
-  /** Address-space cap in MB (via prlimit) — 0/undefined = none. */
+  /**
+   * Address-space cap in MB (via prlimit) — 0/undefined = none. NEVER use for SVT-AV1 (it maps far more
+   * address space than it touches and fails with "Cannot allocate memory"); use `rssLimitMb` there.
+   */
   memLimitMb?: number;
+  /** Resident-memory watchdog: the whole process group is killed when its summed RSS exceeds this. 0 = off. */
+  rssLimitMb?: number;
   onStdout?: (chunk: string) => void;
   onStderr?: (chunk: string) => void;
   /** Keep at most this many bytes of stdout/stderr (tail) for error messages / parsing. */
@@ -31,6 +37,33 @@ export const liveChildren = (): ReadonlySet<ChildProcess> => live;
 let prlimitPath: string | null = null;
 export function setPrlimit(p: string | null): void {
   prlimitPath = p;
+}
+
+const PAGE = 4096;
+
+/** Summed resident set size (bytes) of every process in a process group, read from /proc (Linux). */
+export function groupRssBytes(pgid: number): number {
+  let total = 0;
+  let entries: string[];
+  try {
+    entries = fs.readdirSync("/proc");
+  } catch {
+    return 0;
+  }
+  for (const e of entries) {
+    if (e.charCodeAt(0) < 48 || e.charCodeAt(0) > 57) continue;
+    try {
+      const stat = fs.readFileSync(`/proc/${e}/stat`, "latin1");
+      // pid (comm) state ppid pgrp ... — comm may contain spaces/parens, so split after the last ")".
+      const rest = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+      if (Number(rest[2]) !== pgid) continue;
+      const statm = fs.readFileSync(`/proc/${e}/statm`, "latin1").split(" ");
+      total += Number(statm[1] ?? 0) * PAGE;
+    } catch {
+      /* process vanished */
+    }
+  }
+  return total;
 }
 
 /** Kill the child's whole process group (children are spawned detached = their own group). */
@@ -117,11 +150,22 @@ export function run(cmd: string, args: string[], opts: RunOptions = {}): Promise
           }, opts.timeoutMs)
         : null;
 
+    const rssTimer =
+      opts.rssLimitMb && opts.rssLimitMb > 0 && child.pid !== undefined
+        ? setInterval(() => {
+            if (groupRssBytes(child.pid!) > opts.rssLimitMb! * 1024 * 1024) {
+              failure ??= new MemoryLimitError();
+              killTree(child);
+            }
+          }, 750)
+        : null;
+
     const finish = (err: Error | null, res?: RunResult) => {
       if (settled) return;
       settled = true;
       live.delete(child);
       if (timer) clearTimeout(timer);
+      if (rssTimer) clearInterval(rssTimer);
       opts.signal?.removeEventListener("abort", onAbort);
       // Make sure nothing in the group survives (e.g. soffice.bin after oosplash exits).
       if (child.pid !== undefined) {

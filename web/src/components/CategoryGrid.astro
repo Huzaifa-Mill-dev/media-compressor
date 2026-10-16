@@ -1,0 +1,33 @@
+---
+import type { Category, ToolDefinition } from "../../../engine/src/types.ts";
+import { CATEGORIES, shortTitle, toolHref } from "../lib/content";
+import Icon from "./Icon.astro";
+
+interface Props {
+  groups: { category: Category; tools: ToolDefinition[] }[];
+}
+const { groups } = Astro.props;
+---
+<div class="category-grid">
+  {
+    groups.map(({ category, tools }) => (
+      <section class="card category-card" aria-labelledby={`cat-${category}`}>
+        <h3 id={`cat-${category}`}>
+          <span class="cat-icon"><Icon paths={CATEGORIES[category].icon} size={16} /></span>
+          <a href={`/tools/${category}`}>{CATEGORIES[category].label}</a>
+        </h3>
+        <p>{CATEGORIES[category].blurb}</p>
+        <ul class="tool-links">
+          {tools.map((t) => (
+            <li>
+              <a href={toolHref(t)}>
+                <span>{shortTitle(t)}</span>
+                <span class={`rt${t.runtimes[0] === "server" ? " server" : ""}`}>{t.runtimes[0] === "server" ? "Server" : "On device"}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</div>

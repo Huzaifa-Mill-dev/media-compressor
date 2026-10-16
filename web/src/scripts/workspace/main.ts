@@ -113,14 +113,6 @@ function startWorkspace(root: HTMLElement): void {
 
   // ── helpers ──
   const running = () => [...jobs].some((j) => isActive(j.status));
-  const pendingJobs = (): Job[] => {
-    if (multi) {
-      const free = items.filter((i) => !i.job);
-      if (free.length === 0) return [];
-      return [{ id: -1, items: free, status: "pending", percent: 0, message: "", outputUrls: [] }];
-    }
-    return items.filter((i) => i.job?.status === "pending").map((i) => i.job!);
-  };
   const readyCount = () => (multi ? items.filter((i) => !i.job).length : items.filter((i) => i.job?.status === "pending").length);
 
   function showNotice(node: HTMLElement): void {
@@ -152,8 +144,6 @@ function startWorkspace(root: HTMLElement): void {
     if (job) {
       if (isActive(job.status)) job.ctrl?.abort();
       discardJob(job);
-      // multiInput: discarding the group frees the siblings; single: the job dies with the item.
-      if (!multi) job.items.length = 0;
     }
     dropItem(item);
     refreshAll();
@@ -416,14 +406,12 @@ function startWorkspace(root: HTMLElement): void {
   }
 
   function afterJobSettled(job: Job): void {
-    if (!jobs.has(job)) {
-      scheduleUi();
-      return;
+    if (jobs.has(job)) {
+      refreshQueueRows(job);
+      updateResultsCard();
     }
-    refreshQueueRows(job);
-    updateResultsCard();
     scheduleUi();
-    if (!running()) endBatch();
+    if (!running() && batch) endBatch();
   }
 
   function refreshQueueRows(job: Job): void {
@@ -551,7 +539,8 @@ function startWorkspace(root: HTMLElement): void {
     if (!compareReady) {
       compareReady = true;
       wireBackdropClose(compare);
-      syncPair(a, b, (playing) => (playBtn.lastChild!.textContent = playing ? "Pause both" : "Play both in sync"));
+      const label = $(playBtn, "span");
+      syncPair(a, b, (playing) => (label.textContent = playing ? "Pause both" : "Play both in sync"));
       playBtn.addEventListener("click", () => togglePair(a, b));
       compare.addEventListener("close", () => {
         for (const v of [a, b]) {
@@ -631,7 +620,7 @@ function startWorkspace(root: HTMLElement): void {
 
   // Test hook (only present in PUBLIC_TEST_HOOKS builds).
   if (import.meta.env.PUBLIC_TEST_HOOKS === "1") {
-    (window as unknown as { __MT_STATE__?: unknown }).__MT_STATE__ = { items, jobs, pendingJobs };
+    (window as unknown as { __MT_STATE__?: unknown }).__MT_STATE__ = { items, jobs };
   }
 }
 

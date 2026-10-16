@@ -70,6 +70,11 @@ export interface ProcCtx {
   options: Options;
   env: WorkerEnvInfo;
   progress(stage: JobStage, percent: number, message?: string): void;
+  /** Only set for processors that run on the main thread (they cancel cooperatively). */
+  signal?: AbortSignal;
 }
+
+/** Tools whose processor needs the DOM (pdf.js) and therefore runs on the main thread, not in a worker. */
+export const MAIN_THREAD_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>(["pdf-to-images"]);
 
 export type Processor = (ctx: ProcCtx) => Promise<ProcResult>;

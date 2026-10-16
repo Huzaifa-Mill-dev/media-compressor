@@ -45,7 +45,7 @@ const wasmLibs = [
 export default defineConfig({
   site: SITE_URL,
   output: "static",
-  outDir: "./dist",
+  outDir: process.env.OUT_DIR || "./dist",
   trailingSlash: "never",
   build: {
     format: "file",

@@ -1,0 +1,29 @@
+---
+import type { GetStaticPaths } from "astro";
+import type { Category } from "../../../../engine/src/types.ts";
+import CategoryGrid from "../../components/CategoryGrid.astro";
+import Layout from "../../layouts/Layout.astro";
+import { CATEGORIES, SITE_NAME, shortTitle } from "../../lib/content";
+import { toolsByCategory } from "../../lib/registry";
+
+export const getStaticPaths = (() =>
+  toolsByCategory().map((g) => ({ params: { category: g.category }, props: { group: g } }))) satisfies GetStaticPaths;
+
+const { group } = Astro.props;
+const info = CATEGORIES[group.category as Category];
+const title = `${info.label} tools — ${group.tools.map(shortTitle).slice(0, 2).join(", ")} | ${SITE_NAME}`;
+const description = `${info.blurb} Free ${info.noun} tools that run in your browser — private, fast, no sign-up.`;
+---
+<Layout title={title} description={description}>
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li aria-current="page">{info.label}</li>
+    </ol>
+  </nav>
+  <header class="page-head">
+    <h1>{info.label} tools</h1>
+    <p class="lead">{info.blurb}</p>
+  </header>
+  <CategoryGrid groups={[group]} />
+</Layout>

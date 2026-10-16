@@ -5,6 +5,5 @@ serveWorker({
   "pdf-merge": async () => (await import("../processors/pdf")).processPdf,
   "pdf-split": async () => (await import("../processors/pdf")).processPdf,
   "images-to-pdf": async () => (await import("../processors/pdf")).processPdf,
-  "pdf-to-images": async () => (await import("../processors/pdf-render")).processPdfToImages,
   "spreadsheet-convert": async () => (await import("../processors/sheet")).processSheet,
 });

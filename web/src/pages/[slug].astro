@@ -1,0 +1,98 @@
+---
+import type { GetStaticPaths } from "astro";
+import type { ToolDefinition } from "../../../engine/src/types.ts";
+import Workspace from "../components/Workspace.astro";
+import Layout from "../layouts/Layout.astro";
+import { CATEGORIES, SITE_NAME, faq, formatList, howTo, runsInBrowser, shortTitle, toolHref } from "../lib/content";
+import { tools } from "../lib/registry";
+
+export const getStaticPaths = (() => tools.map((tool) => ({ params: { slug: tool.slug }, props: { tool } }))) satisfies GetStaticPaths;
+
+const { tool } = Astro.props as { tool: ToolDefinition };
+const site = Astro.site ?? new URL("http://localhost:3000");
+const cat = CATEGORIES[tool.category];
+const h1 = shortTitle(tool);
+const title = `${tool.title} | ${SITE_NAME}`;
+const url = new URL(toolHref(tool), site).href;
+const questions = faq(tool);
+const steps = howTo(tool);
+const related = tools.filter((t) => t.id !== tool.id && t.category === tool.category);
+const others = tools.filter((t) => t.id !== tool.id && t.category !== tool.category).slice(0, 4);
+const onDevice = runsInBrowser(tool);
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: h1,
+    description: tool.description,
+    url,
+    applicationCategory: "MultimediaApplication",
+    operatingSystem: "Any (web browser)",
+    browserRequirements: "Requires JavaScript and a modern browser",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    featureList: [...tool.accepts.length ? [`Input: ${formatList(tool.accepts)}`] : [], ...(tool.outputs.length ? [`Output: ${formatList(tool.outputs)}`] : []), onDevice ? "Processes files on your device" : "Server-assisted processing"],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", site).href },
+      { "@type": "ListItem", position: 2, name: `${cat.label} tools`, item: new URL(`/tools/${tool.category}`, site).href },
+      { "@type": "ListItem", position: 3, name: h1, item: url },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: questions.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+  },
+];
+---
+<Layout title={title} description={tool.description} jsonLd={jsonLd} ogType="website">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li><a href={`/tools/${tool.category}`}>{cat.label}</a></li>
+      <li aria-current="page">{h1}</li>
+    </ol>
+  </nav>
+
+  <header class="page-head">
+    <h1>{h1}</h1>
+    <p class="lead">{tool.description}</p>
+  </header>
+
+  <Workspace tool={tool} />
+
+  <section class="card prose info-grid" aria-label="About this tool">
+    <div>
+      <h2>How to use</h2>
+      <ol>{steps.map((s) => <li>{s}</li>)}</ol>
+    </div>
+    <div>
+      <h2>Formats &amp; privacy</h2>
+      <p><strong>Input:</strong> {formatList(tool.accepts)}</p>
+      {tool.outputs.length > 0 && <p><strong>Output:</strong> {formatList(tool.outputs)}</p>}
+      <p>
+        {onDevice
+          ? "Files are processed on your device whenever your browser can do the job. A file only reaches our server when it is too large or needs a codec the browser lacks."
+          : "This tool runs on our server. Files travel over HTTPS, are processed in an isolated temporary folder and are deleted automatically within 30 minutes."}
+        {" "}<a href="/privacy">Read the privacy details</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="card prose faq" aria-labelledby="faq-title">
+    <h2 id="faq-title">Frequently asked questions</h2>
+    {questions.map((f) => <details><summary>{f.q}</summary><p>{f.a}</p></details>)}
+  </section>
+
+  <section class="card prose" aria-labelledby="related-title">
+    <h2 id="related-title">More tools</h2>
+    <ul class="tool-links">
+      {[...related, ...others].map((t) => <li><a href={toolHref(t)}><span>{shortTitle(t)}</span></a></li>)}
+    </ul>
+  </section>
+</Layout>

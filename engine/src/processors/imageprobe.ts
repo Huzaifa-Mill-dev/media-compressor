@@ -168,3 +168,32 @@ export function fitWithin(w: number, h: number, maxW?: number, maxH?: number): D
   if (s >= 1) return { width: w, height: h };
   return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)) };
 }
+
+/** EXIF orientation (1–8) of a JPEG; 1 when absent/unreadable. */
+export function jpegOrientation(b: Uint8Array): number {
+  try {
+    let i = 2;
+    while (i + 4 < b.length && b[i] === 0xff) {
+      const m = b[i + 1]!;
+      const len = u16be(b, i + 2);
+      if (m === 0xe1 && ascii(b, i + 4, "Exif\0\0")) {
+        const t = i + 10; // TIFF header
+        const le = b[t] === 0x49;
+        const r16 = (o: number) => (le ? u16le(b, o) : u16be(b, o));
+        const r32 = (o: number) => (le ? u32le(b, o) : u32be(b, o));
+        const ifd = t + r32(t + 4);
+        const n = r16(ifd);
+        for (let k = 0; k < n; k++) {
+          const e = ifd + 2 + k * 12;
+          if (r16(e) === 0x0112) return r16(e + 8);
+        }
+        return 1;
+      }
+      if (m === 0xda) break;
+      i += 2 + len;
+    }
+  } catch {
+    /* ignore */
+  }
+  return 1;
+}

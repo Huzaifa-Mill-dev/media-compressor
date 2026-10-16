@@ -18,8 +18,12 @@ export function getEngine(): Promise<Engine> {
         const { createMockEngine } = await import("./engine-mock.ts");
         return createMockEngine();
       }
-      const { createEngine } = await import("../../../engine/src/index.ts");
-      return createEngine();
+      // TEMPORARY until engine/src/index.ts lands: the glob is empty when the file is absent.
+      const real = import.meta.glob("../../../engine/src/index.ts");
+      const loader = Object.values(real)[0];
+      if (!loader) throw new Error("The conversion engine is not available in this build.");
+      const mod = (await loader()) as { createEngine: () => Engine };
+      return mod.createEngine();
     })();
     // Allow a retry after a failed load (e.g. flaky network for a chunk).
     enginePromise.catch(() => {
