@@ -78,18 +78,9 @@ function browserSupport(tool: ToolDefinition, files: FileInfo[], options: Option
       return yes;
     }
     case "video":
-    case "audio": {
-      for (let i = 0; i < files.length; i++) {
-        const p = mediaPath(tool.id, exts[i]!, options, env);
-        if (typeof p === "object") return no(p.reason);
-        if (p === "ffmpeg" && files[i]!.size > FFMPEG_MAX_BYTES) {
-          return no(
-            `${files[i]!.name} is too large for in-browser conversion of this kind (max ${formatBytes(FFMPEG_MAX_BYTES)}).`,
-          );
-        }
-      }
-      return yes;
-    }
+    case "audio":
+      // mediabunny/ffmpeg.wasm path not implemented in this build → always server.
+      return no("In-browser audio/video processing isn't available yet.");
     case "font": {
       const target = String(options.format ?? "woff2");
       for (const f of files) {

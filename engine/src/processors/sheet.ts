@@ -143,13 +143,13 @@ export async function processSheet(ctx: ProcCtx): Promise<ProcResult> {
     outputs.push({ blob, filename: safeName(`${base}.xlsx`), mime: mimeOf("xlsx"), size: blob.size });
   } else if (target === "csv") {
     for (const s of selected) {
-      const text = serializeCsv(s.rows.map((r) => r.map((c) => (c instanceof Date ? dateIso(c) : c))), { bom: true });
+      const text = serializeCsv(s.rows.map((r) => r.map((c) => ((c as unknown) instanceof Date ? dateIso(c as unknown as Date) : c))), { bom: true });
       const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
       outputs.push({ blob, filename: nameFor(s, "csv"), mime: "text/csv", size: blob.size });
     }
   } else if (target === "json") {
     for (const s of selected) {
-      const objs = rowsToObjects(s.rows.map((r) => r.map((c) => (c instanceof Date ? dateIso(c) : c))));
+      const objs = rowsToObjects(s.rows.map((r) => r.map((c) => ((c as unknown) instanceof Date ? dateIso(c as unknown as Date) : c))));
       const blob = new Blob([JSON.stringify(objs, null, 2)], { type: "application/json" });
       outputs.push({ blob, filename: nameFor(s, "json"), mime: "application/json", size: blob.size });
     }

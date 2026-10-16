@@ -1,0 +1,32 @@
+import { defineConfig } from "vitest/config";
+
+const wasmLibs = ["@jsquash/avif", "@jsquash/jpeg", "@jsquash/png", "@jsquash/webp", "@jsquash/oxipng", "@jsquash/resize", "mediabunny", "pdfjs-dist", "heic-to", "libimagequant-wasm"];
+const headers = { "Cross-Origin-Opener-Policy": "same-origin", "Cross-Origin-Embedder-Policy": "require-corp" };
+
+export default defineConfig({
+  test: {
+    projects: [
+      { test: { name: "unit", environment: "node", include: ["test/unit/**/*.test.ts"] } },
+      {
+        publicDir: "test/.public",
+        server: { headers, fs: { allow: [".."] } },
+        optimizeDeps: { exclude: wasmLibs, include: ["wawoff2/compress.js", "wawoff2/decompress.js", "exceljs", "pdf-lib"] },
+        worker: { format: "es" },
+        test: {
+          name: "browser",
+          include: ["test/browser/**/*.test.ts"],
+          testTimeout: 120_000,
+          hookTimeout: 60_000,
+          fileParallelism: false,
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: "playwright",
+            instances: [{ browser: "chromium" }],
+            api: { port: 63315, strictPort: false },
+          },
+        },
+      },
+    ],
+  },
+});

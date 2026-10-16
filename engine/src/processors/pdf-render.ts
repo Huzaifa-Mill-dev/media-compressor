@@ -48,7 +48,6 @@ export async function processPdfToImages(ctx: ProcCtx): Promise<ProcResult> {
     cMapUrl: `${vendor}pdfjs/cmaps/`,
     cMapPacked: true,
     wasmUrl: `${vendor}pdfjs/wasm/`,
-    isEvalSupported: false,
   });
   const onAbort = () => void task.destroy();
   signal?.addEventListener("abort", onAbort, { once: true });
@@ -100,7 +99,7 @@ export async function processPdfToImages(ctx: ProcCtx): Promise<ProcResult> {
       page.cleanup();
       ctx.progress("processing", 8 + (90 * p) / n, `Page ${p}/${n}`);
     }
-    await pdf.destroy();
+    await task.destroy();
     return { outputs, meta: { pages: n, dpi } };
   } finally {
     signal?.removeEventListener("abort", onAbort);
