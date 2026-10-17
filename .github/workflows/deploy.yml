@@ -72,8 +72,15 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/media-compressor
-            git pull origin main
+            # The box is a deploy target, not a dev checkout: take exactly what is on main
+            # (also drops the old tracked data/history.json that the previous server kept rewriting).
+            git fetch origin main
+            git reset --hard origin/main
             export NODE_OPTIONS=--max-old-space-size=700
             npm ci && npm --prefix engine ci && npm --prefix web ci
             npm run build
-            pm2 restart media-compressor --update-env || pm2 start "npm start" --name media-compressor
+            unset NODE_OPTIONS
+            # Start from ecosystem.config.cjs: a plain "pm2 restart" would reuse the old saved command (node server.js).
+            pm2 delete media-compressor >/dev/null 2>&1 || true
+            pm2 start ecosystem.config.cjs
+            pm2 save

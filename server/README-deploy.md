@@ -41,6 +41,27 @@ The GitHub Action (`.github/workflows/deploy.yml`) runs the tests on every PR an
 (needs secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`). Building the Astro site on the box needs the swapfile; if it
 still runs out of memory, build in CI and copy `web/dist` and `server/dist` instead.
 
+## nginx in front of the app
+
+The app listens on :3000 and expects a reverse proxy that terminates TLS. Required settings (defaults will break uploads):
+
+```nginx
+client_max_body_size 520m;            # default is 1 MB: every real upload would get HTTP 413
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_request_buffering off;      # stream big uploads to the app instead of spooling them to disk
+    proxy_buffering off;              # progress events (SSE) must not be held back
+    proxy_read_timeout 3600s;         # long video jobs
+}
+```
+
+The app already sends COOP/COEP/CSP headers; do not strip them. `TRUST_PROXY=1` (set in `ecosystem.config.cjs`) makes the
+per-IP rate limit use the real client address; without it every visitor would share one limit.
+
 ## Memory budget
 
 | Setting | Default | Why |
