@@ -1,0 +1,54 @@
+---
+import CategoryGrid from "../components/CategoryGrid.astro";
+import Icon from "../components/Icon.astro";
+import Layout from "../layouts/Layout.astro";
+import { SITE_NAME } from "../lib/content";
+import { ICONS } from "../lib/dom";
+import { toolsByCategory, tools } from "../lib/registry";
+
+const groups = toolsByCategory();
+const title = `${SITE_NAME} — Free image, video, audio, PDF & document tools`;
+const description =
+  "Compress and convert images, video, audio, fonts, PDFs, documents and spreadsheets for free. Files are processed on your device whenever possible — private, fast, no sign-up.";
+const site = Astro.site ?? new URL("http://localhost:3000");
+const jsonLd = [
+  { "@context": "https://schema.org", "@type": "WebSite", name: SITE_NAME, url: new URL("/", site).href, description },
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${SITE_NAME} tools`,
+    itemListElement: tools.map((t, i) => ({ "@type": "ListItem", position: i + 1, name: t.title, url: new URL(`/${t.slug}`, site).href })),
+  },
+];
+---
+<Layout title={title} description={description} jsonLd={jsonLd}>
+  <section class="hero">
+    <h1>Compress &amp; convert any file, <em>privately on your device</em></h1>
+    <p class="lead">
+      Images, video, audio, fonts, PDFs, documents and spreadsheets. Free, no sign-up, no watermark, and your files stay on your computer whenever your browser can do the job.
+    </p>
+    <div class="hero-cta">
+      <a class="btn-download" href="/compress-image">Compress images</a>
+      <a class="btn-secondary" href="/compress-video">Compress video</a>
+      <a class="btn-secondary" href="/merge-pdf">Merge PDFs</a>
+    </div>
+  </section>
+
+  <section class="pitch-row" aria-label="Why use this toolkit">
+    <div class="card pitch">
+      <h2><Icon paths={ICONS.shield} size={18} /> Private by default</h2>
+      <p>Files are processed on your device when possible. Nothing is uploaded unless a tool genuinely needs our server, and then it is deleted automatically within 30 minutes.</p>
+    </div>
+    <div class="card pitch">
+      <h2><Icon paths={ICONS.bolt} size={18} /> Fast, in parallel</h2>
+      <p>Modern WebAssembly codecs and your hardware video encoder run several files at once, without waiting on an upload queue or a slow server.</p>
+    </div>
+    <div class="card pitch">
+      <h2><Icon paths={ICONS.rocket} size={18} /> Free, without the catch</h2>
+      <p>No account, no daily limit, no watermark and no paywall on the formats you actually use.</p>
+    </div>
+  </section>
+
+  <h2 class="section-title">All tools</h2>
+  <CategoryGrid groups={groups} />
+</Layout>

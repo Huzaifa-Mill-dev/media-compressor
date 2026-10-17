@@ -5,3 +5,7 @@ data/*.json
 *.log
 .DS_Store
 *.bak
+engine/test/browser/__screenshots__/
+server/build/
+server/dist/
+web/public/vendor/ffmpeg/
