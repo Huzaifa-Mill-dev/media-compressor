@@ -8,3 +8,4 @@ data/*.json
 engine/test/browser/__screenshots__/
 server/build/
 server/dist/
+web/public/vendor/ffmpeg/

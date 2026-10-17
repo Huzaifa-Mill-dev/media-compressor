@@ -65,4 +65,4 @@ Pushes to `main` run the tests and then deploy to EC2 over SSH (`.github/workflo
 
 ## Not implemented yet
 
-In-browser video/audio processing (those jobs currently use the server), server-side video poster frames and SSIM scores, optional S3 upload.
+Server-side video poster frames and SSIM scores, optional S3 upload. In-browser video/audio uses mediabunny (WebCodecs) with a single-thread ffmpeg.wasm fallback for GIF/AVI/OGV/3GP; very large files and anything the browser can't encode still go to the server.

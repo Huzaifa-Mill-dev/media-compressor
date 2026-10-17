@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 
-const wasmLibs = ["woff2-encoder", "@jsquash/avif", "@jsquash/jpeg", "@jsquash/png", "@jsquash/webp", "@jsquash/oxipng", "@jsquash/resize", "mediabunny", "pdfjs-dist", "heic-to", "libimagequant-wasm"];
+const wasmLibs = ["woff2-encoder", "@ffmpeg/ffmpeg", "@ffmpeg/util", "@ffmpeg/core", "@ffmpeg/core-mt", "@mediabunny/aac-encoder", "@mediabunny/flac-encoder", "@mediabunny/mp3-encoder", "@jsquash/avif", "@jsquash/jpeg", "@jsquash/png", "@jsquash/webp", "@jsquash/oxipng", "@jsquash/resize", "mediabunny", "pdfjs-dist", "heic-to", "libimagequant-wasm"];
 const headers = { "Cross-Origin-Opener-Policy": "same-origin", "Cross-Origin-Embedder-Policy": "require-corp" };
 
 export default defineConfig({

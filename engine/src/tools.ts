@@ -150,7 +150,7 @@ export const tools: ToolDefinition[] = [
     outputs: ["mp4", "webm"],
     multiInput: false,
     runtimes: ["browser", "server"],
-    browserMaxBytes: 1.5 * GB,
+    browserMaxBytes: 800 * MB,
     options: [
       {
         type: "select",
@@ -236,7 +236,7 @@ export const tools: ToolDefinition[] = [
     outputs: ["mp4", "webm", "mov", "mkv", "gif"],
     multiInput: false,
     runtimes: ["browser", "server"],
-    browserMaxBytes: 1.5 * GB,
+    browserMaxBytes: 800 * MB,
     options: [
       {
         type: "select",
@@ -285,7 +285,7 @@ export const tools: ToolDefinition[] = [
     outputs: ["mp3", "m4a", "ogg", "opus", "wav", "flac"],
     multiInput: false,
     runtimes: ["browser", "server"],
-    browserMaxBytes: 1.5 * GB,
+    browserMaxBytes: 800 * MB,
     options: [
       {
         type: "select",

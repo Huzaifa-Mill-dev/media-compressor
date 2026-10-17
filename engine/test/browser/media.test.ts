@@ -40,8 +40,7 @@ let clip: File | null = null;
 beforeAll(async () => { try { clip = await makeWebm(); } catch (e) { console.warn("MEDIA fixture unavailable:", String(e)); } }, 60_000);
 const needClip = (): File => { if (!clip) throw new Error("no WebCodecs VP9/Opus in this Chromium — cannot build video fixture"); return clip; };
 
-// SKIPPED until src/processors/media.ts is implemented (currently a stub; routing.ts refuses in-browser media). Unskip to drive that work.
-describe.skip("audio (browser)", () => {
+describe("audio (browser)", () => {
   it("wav -> wav passthrough/convert keeps RIFF", async () => {
     const r = await engine.run({ toolId: "audio-convert", files: [wav()], options: { format: "wav" } });
     expect(ascii((await head(r.outputs[0]!.blob, 12)).slice(8, 12))).toBe("WAVE");
@@ -62,7 +61,7 @@ describe.skip("audio (browser)", () => {
   }, 60_000);
 });
 
-describe.skip("video (browser)", () => {
+describe("video (browser)", () => {
   it("fixture builds (or reports codec gap)", () => { console.log("MEDIA fixture:", clip ? `${clip.size} bytes` : "UNAVAILABLE"); });
   it("compress -> valid container, plays metadata", async () => {
     const f = needClip();

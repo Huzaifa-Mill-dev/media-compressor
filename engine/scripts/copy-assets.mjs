@@ -13,6 +13,8 @@ const jobs = [
   ["pdfjs-dist/standard_fonts", "pdfjs/standard_fonts"],
   ["pdfjs-dist/cmaps", "pdfjs/cmaps"],
   ["pdfjs-dist/wasm", "pdfjs/wasm"],
+  // ffmpeg.wasm single-thread core (≈32 MB, loaded on demand; generated, not committed)
+  ["@ffmpeg/core/dist/esm", "ffmpeg/st"],
 ];
 for (const [from, to] of jobs) {
   const src = join(nm, from);

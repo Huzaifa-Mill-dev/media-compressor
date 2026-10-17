@@ -78,9 +78,13 @@ function browserSupport(tool: ToolDefinition, files: FileInfo[], options: Option
       return yes;
     }
     case "video":
-    case "audio":
-      // mediabunny/ffmpeg.wasm path not implemented in this build → always server.
-      return no("In-browser audio/video processing isn't available yet.");
+    case "audio": {
+      // mediabunny (WebCodecs) or ffmpeg.wasm; the media processor throws "browser-unsupported" (→ server) for the rest.
+      const path = mediaPath(tool.id, exts[0] ?? "", options, { webCodecs: env.webCodecs, wasm: env.wasm });
+      if (typeof path === "object") return no(path.reason);
+      if (path === "ffmpeg" && files.some((f) => f.size > FFMPEG_MAX_BYTES)) return no(`The in-browser fallback encoder handles files up to ${formatBytes(FFMPEG_MAX_BYTES)}.`);
+      return yes;
+    }
     case "font": {
       const target = String(options.format ?? "woff2");
       for (const f of files) {
