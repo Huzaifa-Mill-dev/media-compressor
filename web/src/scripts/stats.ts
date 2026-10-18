@@ -48,6 +48,9 @@ async function loadServer(): Promise<void> {
 }
 
 render();
-void loadServer();
+// The site-wide counter is non-essential: fetch it once the page is idle so it never competes with first paint.
+const idle = (fn: () => void) => ("requestIdleCallback" in window ? window.requestIdleCallback(fn, { timeout: 4000 }) : setTimeout(fn, 2000));
+if (document.readyState === "complete") idle(() => void loadServer());
+else window.addEventListener("load", () => idle(() => void loadServer()), { once: true });
 window.addEventListener(HISTORY_EVENT, render);
 window.addEventListener("storage", render);

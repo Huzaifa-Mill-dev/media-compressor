@@ -23,6 +23,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/server/scripts ./server/scripts
+COPY --from=build /app/shared ./shared
 COPY --from=build /app/web/dist ./web/dist
 RUN mkdir -p data && chown -R node:node /app/data
 USER node

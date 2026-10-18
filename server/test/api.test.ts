@@ -28,6 +28,14 @@ describe("basics", () => {
     expect(r.headers["content-security-policy"]).toContain("'wasm-unsafe-eval'");
     expect(r.headers["x-powered-by"]).toBeUndefined();
   });
+  it("CSP allows exactly the inline theme boot script (by sha256), nothing else inline", async () => {
+    const { script } = JSON.parse(fs.readFileSync(path.join(__dirname, "../../shared/theme-boot.json"), "utf8"));
+    const hash = require("node:crypto").createHash("sha256").update(script).digest("base64");
+    const csp = (await h.http.get("/api/health")).headers["content-security-policy"] as string;
+    const scriptSrc = csp.split(";").find((d) => d.trim().startsWith("script-src"))!;
+    expect(scriptSrc).toContain(`sha256-${hash}`);
+    expect(scriptSrc).not.toContain("unsafe-inline");
+  });
   it("has no public history or job listing", async () => {
     for (const p of ["/api/history", "/api/jobs", "/api/files"]) expect((await h.http.get(p)).status).toBe(404);
   });

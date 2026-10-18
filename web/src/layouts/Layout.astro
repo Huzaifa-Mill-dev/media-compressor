@@ -1,5 +1,7 @@
 ---
 import "@fontsource-variable/inter-tight/wght.css";
+import interTightWoff2 from "@fontsource-variable/inter-tight/files/inter-tight-latin-wght-normal.woff2?url";
+import themeBoot from "../../../shared/theme-boot.json";
 import "../styles/global.css";
 import { SITE_NAME, SITE_TAGLINE, CATEGORIES, jsonForScript } from "../lib/content";
 import { toolsByCategory } from "../lib/registry";
@@ -27,7 +29,9 @@ const ldJson = jsonForScript;
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <script is:inline src="/theme.js"></script>
+    <script is:inline set:html={themeBoot.script}></script>
+    <link rel="preload" href={interTightWoff2} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/InterDisplay-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -52,7 +56,7 @@ const ldJson = jsonForScript;
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="header">
       <div class="header-inner">
-        <a class="logo" href="/" aria-label={`${SITE_NAME} home`}>
+        <a class="logo" href="/">
           <span class="logo-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
