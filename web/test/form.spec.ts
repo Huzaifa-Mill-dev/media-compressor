@@ -1,11 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { tools } from "../../engine/src/tools";
+import type { Page } from "@playwright/test";
 import { useMock } from "./helpers";
+
+/** Technical options live in a collapsed section; open it so every field can be checked. */
+async function openAdvanced(page: Page): Promise<void> {
+  const t = page.locator(".advanced-toggle");
+  if (await t.count()) await t.click();
+}
 
 test.describe("generic option form", () => {
   for (const tool of tools) {
     test(`${tool.slug}: renders one control per option, defaults applied`, async ({ page }) => {
       await page.goto(`/${tool.slug}`);
+      await openAdvanced(page);
       await expect(page.locator("[data-option]")).toHaveCount(tool.options.length);
       for (const f of tool.options) {
         const group = page.locator(`[data-option="${f.key}"]`);
@@ -28,6 +36,7 @@ test.describe("generic option form", () => {
 
   test("showIf: video profile=custom reveals advanced fields; pills are radios", async ({ page }) => {
     await page.goto("/compress-video");
+    await openAdvanced(page);
     const pills = page.locator(".profile-pill");
     await expect(pills).toHaveCount(4);
     await expect(page.locator('[data-option="crf"]')).toBeHidden();
@@ -40,14 +49,17 @@ test.describe("generic option form", () => {
 
   test("showIf on select/range/toggle/text: split ranges, video-convert audio toggle, spreadsheet sheets", async ({ page }) => {
     await page.goto("/split-pdf");
+    await openAdvanced(page);
     await expect(page.locator('[data-option="ranges"]')).toBeHidden();
     await page.selectOption("#opt-mode", "ranges");
     await expect(page.locator('[data-option="ranges"]')).toBeVisible();
     await page.goto("/convert-video");
+    await openAdvanced(page);
     await expect(page.locator('[data-option="stripAudio"]')).toBeVisible();
     await page.selectOption("#opt-format", "gif");
     await expect(page.locator('[data-option="stripAudio"]')).toBeHidden();
     await page.goto("/convert-spreadsheet");
+    await openAdvanced(page);
     await expect(page.locator('[data-option="sheets"]')).toBeVisible();
     await page.selectOption("#opt-format", "xlsx");
     await expect(page.locator('[data-option="sheets"]')).toBeHidden();
@@ -56,6 +68,7 @@ test.describe("generic option form", () => {
   test("range output follows slider; invalid number blocks run with a message", async ({ page }) => {
     await useMock(page);
     await page.goto("/compress-image");
+    await openAdvanced(page);
     await page.locator("#opt-quality").fill("40");
     await expect(page.locator("#opt-quality-val")).toHaveText("40");
     await page.setInputFiles("#file-input", { name: "a.png", mimeType: "image/png", buffer: Buffer.from([1, 2, 3]) });

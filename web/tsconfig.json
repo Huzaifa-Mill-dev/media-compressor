@@ -8,5 +8,5 @@
     "types": ["node"]
   },
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "node_modules", "public/vendor", "test-results", "playwright-report"]
+  "exclude": ["dist", "dist-test", "node_modules", "public", "test-results", "playwright-report"]
 }

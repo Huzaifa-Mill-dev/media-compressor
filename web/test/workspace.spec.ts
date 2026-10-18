@@ -5,6 +5,26 @@ import { addFiles, collectErrors, expectNoHorizontalScroll, makePng, png, useMoc
 const rows = (page: import("@playwright/test").Page) => page.locator("#queue-body tr");
 
 test.describe("workspace (mock engine)", () => {
+  test("one-click compress tools: nothing technical upfront, starts on drop", async ({ page }) => {
+    await useMock(page, { stepMs: 5, steps: 2 });
+    await page.goto("/compress-image");
+    await expect(page.locator(".auto-settings")).toBeVisible();
+    await expect(page.locator("details.advanced-options")).not.toHaveAttribute("open", "");
+    await expect(page.locator("[data-option=quality]")).toBeHidden();
+    await addFiles(page, [png("auto.png")]);
+    await expect(page.locator(".result-item")).toHaveCount(1);
+  });
+
+  test("opening Advanced options turns auto-start off", async ({ page }) => {
+    await useMock(page, { stepMs: 5, steps: 2 });
+    await page.goto("/compress-image");
+    await page.locator(".advanced-toggle").click();
+    await expect(page.locator("[data-option=quality]")).toBeVisible();
+    await addFiles(page, [png("manual.png")]);
+    await expect(page.locator("#run-btn")).toBeEnabled();
+    await expect(page.locator(".result-item")).toHaveCount(0);
+  });
+
   test("hostile filenames render as text: no dialog, no injected nodes", async ({ page }) => {
     await useMock(page);
     const dialogs: string[] = [];
@@ -13,7 +33,7 @@ test.describe("workspace (mock engine)", () => {
       void d.dismiss();
     });
     const errs = collectErrors(page);
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     const evil = ["<img src=x onerror=alert(1)>.png", "\"><svg onload=alert(2)>.png", "<script>alert(3)</script>.png"];
     await addFiles(page, evil.map((n, i) => png(n, i + 1)));
     await expect(rows(page)).toHaveCount(3);
@@ -28,7 +48,7 @@ test.describe("workspace (mock engine)", () => {
 
   test("25 files at once all get processed", async ({ page }) => {
     await useMock(page, { stepMs: 5, steps: 2 });
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, Array.from({ length: 25 }, (_, i) => png(`p${i}.png`, i + 1)));
     await expect(rows(page)).toHaveCount(25);
     await page.click("#run-btn");
@@ -38,7 +58,7 @@ test.describe("workspace (mock engine)", () => {
 
   test("unsupported types are rejected visibly and the rest is kept", async ({ page }) => {
     await useMock(page);
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, [png("ok.png"), { name: "evil.exe", mimeType: "application/octet-stream", buffer: Buffer.from("MZ") }, { name: "empty.png", mimeType: "image/png", buffer: Buffer.alloc(0) }]);
     await expect(rows(page)).toHaveCount(1);
     await expect(page.locator('[data-role="rejected"] li')).toHaveCount(2);
@@ -47,7 +67,7 @@ test.describe("workspace (mock engine)", () => {
 
   test("cancel mid-job", async ({ page }) => {
     await useMock(page, { stepMs: 300, steps: 20 });
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, [png("a.png", 1), png("b.png", 2)]);
     await page.click("#run-btn");
     await expect(page.locator("#progress-card")).toBeVisible();
@@ -59,7 +79,7 @@ test.describe("workspace (mock engine)", () => {
 
   test("beforeunload guard is active while a job runs", async ({ page }) => {
     await useMock(page, { stepMs: 300, steps: 20 });
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, [png("a.png")]);
     await page.click("#run-btn");
     await expect(page.locator("#progress-card")).toBeVisible();
@@ -81,7 +101,7 @@ test.describe("workspace (mock engine)", () => {
       Object.defineProperty(window, "localStorage", { get: boom });
     });
     const errs = collectErrors(page);
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, [png("a.png")]);
     await page.click("#run-btn");
     await expect(page.locator(".result-item")).toHaveCount(1);
@@ -90,7 +110,7 @@ test.describe("workspace (mock engine)", () => {
 
   test("history is stored locally, capped, and clearable", async ({ page }) => {
     await useMock(page, { stepMs: 5, steps: 2 });
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, [png("hist.png")]);
     await page.click("#run-btn");
     await expect(page.locator(".result-item")).toHaveCount(1);
@@ -113,7 +133,7 @@ test.describe("workspace (mock engine)", () => {
 
   test("failed file does not abort the batch; retry works", async ({ page }) => {
     await useMock(page, { stepMs: 5, steps: 2, failPattern: "^bad" });
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, [png("bad.png", 1), png("good.png", 2)]);
     await page.click("#run-btn");
     await expect(page.locator(".result-item")).toHaveCount(1);
@@ -127,7 +147,7 @@ test.describe("workspace (mock engine)", () => {
       await page.goto(`/${slug}`);
       await expectNoHorizontalScroll(page);
     }
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, [png("a-very-long-file-name-that-keeps-going-and-going-on-and-on-and-on.png")]);
     await page.click("#run-btn");
     await expect(page.locator(".result-item")).toHaveCount(1);
@@ -136,7 +156,7 @@ test.describe("workspace (mock engine)", () => {
 
   test("keyboard-only flow: choose file, run, reach the download link", async ({ page }) => {
     await useMock(page, { stepMs: 5, steps: 2 });
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await page.locator("#drop-zone").focus();
     const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.keyboard.press("Enter")]);
     await chooser.setFiles([png("kb.png")]);
@@ -186,7 +206,7 @@ test.describe("real engine, in the browser (no mock)", () => {
   });
 
   test("three images run in parallel and ZIP download is a valid zip", async ({ page }) => {
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await page.selectOption("#opt-format", "webp");
     await addFiles(page, [1, 2, 3].map((i) => ({ name: `p${i}.png`, mimeType: "image/png", buffer: makePng(400, 300, i) })));
     await page.click("#run-btn");
@@ -197,7 +217,7 @@ test.describe("real engine, in the browser (no mock)", () => {
   });
 
   test("corrupt image shows a readable error, not a hang", async ({ page }) => {
-    await page.goto("/compress-image");
+    await page.goto("/convert-image");
     await addFiles(page, [{ name: "broken.png", mimeType: "image/png", buffer: Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), Buffer.alloc(200, 1)]) }]);
     await page.click("#run-btn");
     await expect(rows(page).first()).toHaveAttribute("data-status", "error", { timeout: 30_000 });

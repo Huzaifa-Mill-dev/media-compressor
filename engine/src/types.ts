@@ -37,6 +37,8 @@ interface FieldBase {
   key: string;
   label: string;
   help?: string;
+  /** Technical option: tucked into the collapsed "Advanced options" section; the default is the recommended value. */
+  advanced?: boolean;
   /** Show this field only when another option has one of these values. */
   showIf?: { key: string; equals: (string | number | boolean)[] };
 }

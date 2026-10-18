@@ -12,14 +12,22 @@ export async function encodeWebp(img: ImageData, quality: number, effort: Effort
   }
   const { default: encode } = await import("@jsquash/webp/encode.js");
   const method = effort === "fast" ? 2 : effort === "best" ? 6 : 4;
-  const buf = await encode(img, { quality, method, alpha_quality: 100 });
+  // sharp YUV conversion keeps coloured edges (text, logos, UI) crisp at the same size.
+  const buf = await encode(img, { quality, method, alpha_quality: 100, use_sharp_yuv: 1 });
   return new Uint8Array(buf);
 }
+
+/**
+ * The shared 1–100 "quality" means the same visual quality for every format. libavif reaches a given look at much
+ * lower numbers than WebP/JPEG (AVIF ~65 ≈ JPEG/WebP ~85), so it is rescaled; at high quality chroma is kept at full
+ * resolution (4:4:4) so coloured edges and text stay sharp.
+ */
+export const avifQuality = (q: number): number => Math.max(1, Math.min(100, Math.round(q * 0.76)));
 
 export async function encodeAvif(img: ImageData, quality: number, effort: Effort): Promise<Uint8Array> {
   const { default: encode } = await import("@jsquash/avif/encode.js");
   const speed = effort === "fast" ? 9 : effort === "best" ? 5 : 7;
-  const buf = await encode(img, { quality, speed, qualityAlpha: -1 });
+  const buf = await encode(img, { quality: avifQuality(quality), speed, qualityAlpha: -1, subsample: quality >= 80 ? 3 : 1 });
   return new Uint8Array(buf);
 }
 
@@ -63,10 +71,18 @@ export async function quantizeToIndexedPng(img: ImageData, quality: number, effo
   const q = new mod.ImageQuantizer();
   try {
     q.setMaxColors(256);
-    q.setQuality(0, Math.max(1, Math.min(100, quality)));
+    // Only accept a palette that stays close to the target; otherwise the caller falls back to lossless PNG
+    // (photos/gradients would band).
+    const max = Math.max(1, Math.min(100, quality));
+    q.setQuality(Math.max(0, max - 15), max);
     q.setSpeed(effort === "fast" ? 8 : effort === "best" ? 3 : 5);
     const rgba = new Uint8ClampedArray(img.data.buffer, img.data.byteOffset, img.data.byteLength);
-    const res = q.quantizeImage(rgba, img.width, img.height);
+    let res: ReturnType<typeof q.quantizeImage>;
+    try {
+      res = q.quantizeImage(rgba, img.width, img.height);
+    } catch {
+      return null; // quality would drop below the floor
+    }
     try {
       res.setDithering(1.0);
       const indices = res.getPaletteIndices(rgba, img.width, img.height);

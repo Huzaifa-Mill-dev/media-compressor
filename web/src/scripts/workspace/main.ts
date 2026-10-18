@@ -113,6 +113,7 @@ function startWorkspace(root: HTMLElement): void {
 
   // ── helpers ──
   const running = () => [...jobs].some((j) => isActive(j.status));
+  const autoStart = !multi && tool.options.length > 0 && tool.options.every((o) => o.advanced) && tool.runtimes.includes("browser");
   const readyCount = () => (multi ? items.filter((i) => !i.job).length : items.filter((i) => i.job?.status === "pending").length);
 
   function showNotice(node: HTMLElement): void {
@@ -230,6 +231,9 @@ function startWorkspace(root: HTMLElement): void {
       refreshAll();
       liveAnnounce(`${accepted.length} file${accepted.length === 1 ? "" : "s"} added`);
       void prefetchEngine();
+      // One-click tools (nothing to choose upfront, runs on the device): start right away, like TinyPNG. Opening
+      // "Advanced options" means the visitor wants to tweak first, so then we wait for the button.
+      if (autoStart && !root.querySelector("details.advanced-options[open]") && !runBtn.disabled) startRun();
     }
   }
 

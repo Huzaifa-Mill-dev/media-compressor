@@ -38,7 +38,7 @@ test.describe("in-browser video/audio (real engine, cross-origin isolated)", () 
     const clip = await recordClip(page);
     expect(clip.length).toBeGreaterThan(1000);
     await addFiles(page, [{ name: "clip.webm", mimeType: "video/webm", buffer: clip }]);
-    await page.click("#run-btn");
+    // compress-video is a one-click tool: it starts on drop
     await expect(page.locator(".result-item")).toHaveCount(1, { timeout: 90_000 });
     await expect(page.locator(".result-item .runtime-browser")).toBeVisible();
     const [dl] = await Promise.all([page.waitForEvent("download"), page.locator(".btn-download").first().click()]);
