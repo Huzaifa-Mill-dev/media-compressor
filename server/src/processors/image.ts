@@ -66,8 +66,10 @@ export async function processImage(ctx: ProcCtx): Promise<ProcResult> {
 
   ctx.progress(30, "Encoding");
   switch (fmt) {
-    case "webp": pipe = pipe.webp({ quality, effort: [2, 4, 6][effort] }); break;
-    case "avif": pipe = pipe.avif({ quality, effort: [2, 4, 7][effort], chromaSubsampling: "4:2:0" }); break;
+    // Same visual-quality scale as the browser engine: AVIF is rescaled (~65 ≈ WebP/JPEG 85) and keeps full-resolution
+    // chroma at high quality; WebP uses sharp YUV conversion for crisp coloured edges.
+    case "webp": pipe = pipe.webp({ quality, effort: [2, 4, 6][effort], smartSubsample: true }); break;
+    case "avif": pipe = pipe.avif({ quality: Math.max(1, Math.round(quality * 0.76)), effort: [2, 4, 7][effort], chromaSubsampling: quality >= 80 ? "4:4:4" : "4:2:0" }); break;
     case "jpg": pipe = pipe.flatten({ background: "#ffffff" }).jpeg({ quality, mozjpeg: effort === 2 }); break;
     case "png": pipe = pipe.png({ compressionLevel: effort === 0 ? 6 : 9, effort: [3, 6, 9][effort], palette: quality < 100, quality }); break;
     default: throw new JobError(`Unsupported output format ${fmt}`);

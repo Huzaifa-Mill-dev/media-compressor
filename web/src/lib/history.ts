@@ -54,6 +54,10 @@ export function loadHistory(): HistoryEntry[] | null {
   }
 }
 
+/** Same-tab listeners (the header badge) — `storage` events only fire in other tabs. */
+export const HISTORY_EVENT = "mt:history";
+const notify = () => globalThis.dispatchEvent?.(new Event(HISTORY_EVENT));
+
 export function addHistory(entry: HistoryEntry): boolean {
   const s = storage();
   if (!s) return false;
@@ -61,6 +65,7 @@ export function addHistory(entry: HistoryEntry): boolean {
     const list = loadHistory() ?? [];
     list.unshift({ ...entry, name: entry.name.slice(0, 260) });
     s.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, HISTORY_LIMIT)));
+    notify();
     return true;
   } catch {
     return false;
@@ -72,6 +77,7 @@ export function clearHistory(): boolean {
   if (!s) return false;
   try {
     s.removeItem(HISTORY_KEY);
+    notify();
     return true;
   } catch {
     return false;

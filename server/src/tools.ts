@@ -64,7 +64,7 @@ export const SERVER_TOOLS: Record<ToolId, ServerTool> = {
     timeoutMs: 2 * MIN,
     options: {
       format: { t: "select", values: ["original", "webp", "avif", "jpeg", "png"], def: "original" },
-      quality: { t: "range", min: 1, max: 100, def: 75 },
+      quality: { t: "range", min: 1, max: 100, def: 85 },
       ...imageSize(),
     },
   },
@@ -144,7 +144,7 @@ export const SERVER_TOOLS: Record<ToolId, ServerTool> = {
     timeoutMs: 10 * MIN,
     options: {
       format: { t: "select", values: ["mp3", "m4a", "ogg", "opus"], def: "mp3" },
-      bitrate: { t: "select", values: BITRATES, def: "96k" },
+      bitrate: { t: "select", values: BITRATES, def: "128k" },
     },
   },
   "font-convert": {
@@ -195,7 +195,7 @@ export const SERVER_TOOLS: Record<ToolId, ServerTool> = {
     timeoutMs: 8 * MIN,
     options: {
       format: { t: "select", values: ["png", "jpeg"], def: "png" },
-      dpi: { t: "range", min: 72, max: 300, def: 150 },
+      dpi: { t: "range", min: 72, max: 300, def: 200 },
     },
   },
   "images-to-pdf": {

@@ -45,6 +45,9 @@ interface Control {
 export function renderOptionsForm(tool: ToolDefinition, idPrefix: string, onChange?: () => void): OptionsForm {
   const grid = h("div", { class: "options-grid" });
   const stack = h("div", { class: "options-stack" });
+  // Technical options (field.advanced) live in a collapsed section; the defaults are the recommended values.
+  const advGrid = h("div", { class: "options-grid" });
+  const advStack = h("div", { class: "options-stack advanced-body" });
   const controls: Control[] = [];
 
   for (const field of tool.options) {
@@ -85,7 +88,7 @@ export function renderOptionsForm(tool: ToolDefinition, idPrefix: string, onChan
             wrap,
             read: () => (fs.querySelector<HTMLInputElement>("input:checked")?.value ?? field.default),
           };
-          stack.appendChild(wrap);
+          (field.advanced ? advStack : stack).appendChild(wrap);
           controls.push(ctl);
           continue;
         }
@@ -188,11 +191,19 @@ export function renderOptionsForm(tool: ToolDefinition, idPrefix: string, onChan
         break;
       }
     }
-    grid.appendChild(ctl.wrap);
+    (field.advanced ? advGrid : grid).appendChild(ctl.wrap);
     controls.push(ctl);
   }
 
   if (grid.childElementCount > 0) stack.appendChild(grid);
+  if (advGrid.childElementCount > 0) advStack.appendChild(advGrid);
+  if (advStack.childElementCount > 0) {
+    if (stack.childElementCount === 0) {
+      stack.appendChild(h("p", { class: "auto-settings" }, "Best-quality settings are applied automatically. Just add your files."));
+    }
+    const details = h("details", { class: "advanced-options" }, h("summary", { class: "advanced-toggle" }, "Advanced options"), advStack);
+    stack.appendChild(details);
+  }
 
   const byKey = new Map(controls.map((c) => [c.field.key, c]));
   const visible = (c: Control, depth = 0): boolean => {

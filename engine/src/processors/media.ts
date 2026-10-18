@@ -172,9 +172,8 @@ async function toVideo(ctx: ProcCtx, file: File, input: Input, vt: NonNullable<A
   const plan = planVideo(ctx.toolId, ctx.options);
   const w = vt.displayWidth;
   const h = vt.displayHeight;
-  // Same memory guard as the server: true 4K+ is capped to 1080p unless the user chose a resolution.
-  const ultra = w * h > 2560 * 1440 || Math.max(w, h) > 2560;
-  const size = targetSize(w, h, plan.capShort ?? (ultra ? 1080 : undefined));
+  // Native resolution unless the user picked one: the visitor's device does the work, so no 4K memory guard here.
+  const size = targetSize(w, h, plan.capShort);
   const stats = await vt.computePacketStats(120).catch(() => null);
   const sourceBps = stats && stats.averageBitrate > 0 ? stats.averageBitrate : undefined;
   const fps = stats && stats.averagePacketRate > 0 ? stats.averagePacketRate : 30;

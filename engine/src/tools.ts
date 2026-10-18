@@ -22,6 +22,7 @@ const imageSizeFields = (): OptionField[] => [
   {
     type: "number",
     key: "width",
+    advanced: true,
     label: "Max width",
     min: 1,
     max: 16384,
@@ -31,6 +32,7 @@ const imageSizeFields = (): OptionField[] => [
   {
     type: "number",
     key: "height",
+    advanced: true,
     label: "Max height",
     min: 1,
     max: 16384,
@@ -40,6 +42,7 @@ const imageSizeFields = (): OptionField[] => [
   {
     type: "select",
     key: "effort",
+    advanced: true,
     label: "Encoder effort",
     default: "balanced",
     help: "Higher effort gives smaller files but takes longer.",
@@ -74,6 +77,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "format",
+        advanced: true,
         label: "Output format",
         default: "original",
         help: "Keep the original format, or convert while compressing (WebP/AVIF are usually smallest).",
@@ -88,11 +92,12 @@ export const tools: ToolDefinition[] = [
       {
         type: "range",
         key: "quality",
+        advanced: true,
         label: "Quality",
         min: 1,
         max: 100,
         step: 1,
-        default: 75,
+        default: 85,
         help: "Lower = smaller file. 70–80 is visually lossless for most photos. For PNG this controls colour quantisation.",
       },
       ...imageSizeFields(),
@@ -126,6 +131,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "range",
         key: "quality",
+        advanced: true,
         label: "Quality",
         min: 1,
         max: 100,
@@ -155,6 +161,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "profile",
+        advanced: true,
         label: "Profile",
         default: "quality-safe",
         choices: [
@@ -167,6 +174,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "format",
+        advanced: true,
         label: "Container",
         default: "mp4",
         showIf: { key: "profile", equals: ["custom"] },
@@ -178,6 +186,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "codec",
+        advanced: true,
         label: "Video codec",
         default: "h264",
         showIf: { key: "profile", equals: ["custom"] },
@@ -192,6 +201,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "range",
         key: "crf",
+        advanced: true,
         label: "Quality (CRF)",
         min: 14,
         max: 40,
@@ -203,6 +213,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "resolution",
+        advanced: true,
         label: "Max resolution",
         default: "original",
         showIf: { key: "profile", equals: ["custom"] },
@@ -217,12 +228,13 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "audioBitrate",
+        advanced: true,
         label: "Audio bitrate",
         default: "128k",
         showIf: { key: "profile", equals: ["custom"] },
         choices: audioBitrateChoices.filter((c) => parseInt(c.value, 10) <= 256),
       },
-      { type: "toggle", key: "stripAudio", label: "Remove audio", default: false },
+      { type: "toggle", key: "stripAudio", label: "Remove audio", default: false, advanced: true },
     ],
   },
   {
@@ -254,6 +266,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "resolution",
+        advanced: true,
         label: "Max resolution",
         default: "original",
         help: "GIFs are capped at 480p regardless.",
@@ -268,6 +281,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "toggle",
         key: "stripAudio",
+        advanced: true,
         label: "Remove audio",
         default: false,
         showIf: { key: "format", equals: ["mp4", "webm", "mov", "mkv"] },
@@ -304,6 +318,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "bitrate",
+        advanced: true,
         label: "Bitrate",
         default: "192k",
         showIf: { key: "format", equals: ["mp3", "m4a", "ogg", "opus"] },
@@ -343,6 +358,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "bitrate",
+        advanced: true,
         label: "Bitrate",
         default: "192k",
         showIf: { key: "format", equals: ["mp3", "m4a", "ogg", "opus"] },
@@ -366,6 +382,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "format",
+        advanced: true,
         label: "Output format",
         default: "mp3",
         choices: [
@@ -375,7 +392,7 @@ export const tools: ToolDefinition[] = [
           { value: "opus", label: "Opus" },
         ],
       },
-      { type: "select", key: "bitrate", label: "Bitrate", default: "96k", choices: audioBitrateChoices },
+      { type: "select", key: "bitrate", label: "Bitrate", default: "128k", choices: audioBitrateChoices, advanced: true },
     ],
   },
 
@@ -425,6 +442,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "level",
+        advanced: true,
         label: "Compression level",
         default: "ebook",
         choices: [
@@ -506,7 +524,7 @@ export const tools: ToolDefinition[] = [
           { value: "jpeg", label: "JPEG (smaller)" },
         ],
       },
-      { type: "range", key: "dpi", label: "Resolution", min: 72, max: 300, step: 1, default: 150, unit: "dpi" },
+      { type: "range", key: "dpi", label: "Resolution", min: 72, max: 300, step: 1, default: 200, unit: "dpi", advanced: true },
     ],
   },
   {
@@ -525,6 +543,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "pageSize",
+        advanced: true,
         label: "Page size",
         default: "fit",
         choices: [
@@ -533,7 +552,7 @@ export const tools: ToolDefinition[] = [
           { value: "letter", label: "US Letter" },
         ],
       },
-      { type: "range", key: "margin", label: "Margin", min: 0, max: 50, step: 1, default: 0, unit: "mm" },
+      { type: "range", key: "margin", label: "Margin", min: 0, max: 50, step: 1, default: 0, unit: "mm", advanced: true },
     ],
   },
 
@@ -596,6 +615,7 @@ export const tools: ToolDefinition[] = [
       {
         type: "select",
         key: "sheets",
+        advanced: true,
         label: "Sheets",
         default: "first",
         help: "For workbooks with several sheets: export only the first, or one file per sheet.",
