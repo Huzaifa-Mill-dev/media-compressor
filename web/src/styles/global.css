@@ -140,7 +140,7 @@ body::before {
 }
 
 a {
-  color: var(--primary);
+  color: var(--accent-text);
 }
 
 img,
@@ -282,7 +282,7 @@ svg {
   border-radius: 5px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--accent-text);
   white-space: nowrap;
 }
 
@@ -363,7 +363,7 @@ svg {
   text-decoration: none;
 }
 .breadcrumbs a:hover {
-  color: var(--primary);
+  color: var(--accent-text);
 }
 
 /* ─── Hero / page head ─── */
@@ -450,7 +450,7 @@ svg {
   text-decoration: none;
 }
 .category-card h3 a:hover {
-  color: var(--primary);
+  color: var(--accent-text);
 }
 .category-card .cat-icon {
   width: 30px;
@@ -811,7 +811,7 @@ svg {
 .status-badge.processing,
 .status-badge.queued {
   background: var(--primary-dim);
-  color: var(--primary);
+  color: var(--accent-text);
   border-color: var(--primary-border);
 }
 .status-badge.processing {
@@ -1214,7 +1214,7 @@ svg {
   gap: 0.45rem;
 }
 .profile-pill:has(input:checked) .pill-title {
-  color: var(--primary);
+  color: var(--accent-text);
 }
 .pill-desc {
   font-size: 0.72rem;
@@ -1227,7 +1227,7 @@ svg {
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.1em;
-  color: var(--primary);
+  color: var(--accent-text);
 }
 .profile-pill:has(input:checked) .pill-active {
   display: inline-block;
@@ -1813,7 +1813,7 @@ dialog::backdrop {
   font-weight: 600;
 }
 .footer a:hover {
-  color: var(--primary);
+  color: var(--accent-text);
 }
 
 /* ─── Animations ─── */
@@ -1974,7 +1974,6 @@ h2,
 .btn-download,
 .btn-primary,
 .btn-danger-outline,
-.profile-pill,
 .stats-badge,
 .badge,
 .format-chip,
@@ -2141,4 +2140,47 @@ a {
   .stats-badge {
     display: none;
   }
+}
+
+/* ─── Profile cards: calm, neutral selection (cards, not pills); visible spinner on any background ─── */
+.profile-pill {
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  padding: 0.85rem 2.25rem 0.85rem 1rem;
+}
+.profile-pill::before,
+.pill-active,
+.profile-pill:has(input:checked) .pill-active {
+  display: none;
+}
+.profile-pill:has(input:checked) {
+  background: var(--bg-card);
+  border-color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--text);
+}
+.profile-pill:has(input:checked) .pill-title {
+  color: var(--text);
+}
+.profile-pill:has(input:checked)::after {
+  content: "";
+  position: absolute;
+  top: 0.95rem;
+  right: 0.95rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.pill-title {
+  font-weight: 600;
+}
+.spinner {
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+}
+.auto-settings {
+  margin: 0;
+}
+.advanced-options {
+  margin-top: 0.75rem;
 }

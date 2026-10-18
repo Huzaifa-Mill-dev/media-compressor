@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "busboy": "1.6.0",
+    "compression": "1.8.1",
     "express": "5.2.1",
     "pdf-lib": "1.17.1",
     "sharp": "0.34.5"
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/busboy": "1.5.4",
+    "@types/compression": "1.8.1",
     "@types/express": "5.0.6",
     "@types/node": "22.20.4",
     "@types/supertest": "6.0.3",

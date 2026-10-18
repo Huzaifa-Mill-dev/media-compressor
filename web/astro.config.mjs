@@ -49,8 +49,9 @@ export default defineConfig({
   trailingSlash: "never",
   build: {
     format: "file",
-    // CSP: no inline <style>/<script> — always emit external files.
-    inlineStylesheets: "never",
+    // Inline the (small) stylesheet: removes a render-blocking request. The CSP allows inline styles; the only
+    // inline script is the theme boot snippet, allowed by hash.
+    inlineStylesheets: "always",
   },
   devToolbar: { enabled: false },
   integrations: [

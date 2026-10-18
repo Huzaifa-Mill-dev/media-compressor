@@ -1,0 +1,4 @@
+{
+  "//": "Pre-paint theme script. Inlined by web/src/layouts/Layout.astro and allowed by its sha256 in the server CSP (server/src/app.ts). Edit here only.",
+  "script": "try{var t=localStorage.getItem(\"mt:theme\");if(t===\"light\"||t===\"dark\")document.documentElement.dataset.theme=t}catch(e){}"
+}

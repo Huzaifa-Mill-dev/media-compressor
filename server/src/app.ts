@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import busboy from "busboy";
+import compression from "compression";
 import express, { type NextFunction, type Request, type Response } from "express";
-import type { ServerConfig } from "./config.js";
+import { REPO_ROOT, type ServerConfig } from "./config.js";
 import { badRequest, HttpError } from "./errors.js";
 import { isTerminal, JobManager, publicJob, type Job } from "./jobs.js";
 import { createLogger } from "./log.js";
@@ -65,6 +67,16 @@ function rateLimiter(max: number, windowMs: number) {
   return { mw, stop: () => clearInterval(sweep) };
 }
 
+/** sha256 of the inline pre-paint theme script (shared/theme-boot.json) so the CSP can allow exactly that script. */
+const THEME_BOOT_HASH = (() => {
+  try {
+    const { script } = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "shared", "theme-boot.json"), "utf8")) as { script: string };
+    return `'sha256-${createHash("sha256").update(script).digest("base64")}'`;
+  } catch {
+    return "";
+  }
+})();
+
 export function securityHeaders(_req: Request, res: Response, next: NextFunction): void {
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
@@ -74,7 +86,7 @@ export function securityHeaders(_req: Request, res: Response, next: NextFunction
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+    `default-src 'self'; script-src 'self' 'wasm-unsafe-eval' ${THEME_BOOT_HASH}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`,
   );
   next();
 }
@@ -91,6 +103,17 @@ export async function createApp(cfg: ServerConfig, bins: Binaries): Promise<App>
   app.disable("x-powered-by");
   app.set("trust proxy", cfg.trustProxy);
   app.use(securityHeaders);
+  // gzip text responses (HTML with inlined CSS, JS, JSON). Never the SSE progress stream (it must flush per event)
+  // and never downloads of job outputs (already-compressed media; also keeps Content-Length exact).
+  app.use(
+    compression({
+      filter: (req, res) => {
+        const type = String(res.getHeader("Content-Type") ?? "");
+        if (type.startsWith("text/event-stream") || req.path.includes("/outputs/")) return false;
+        return compression.filter(req, res);
+      },
+    }),
+  );
 
   const api = express.Router();
   api.use((_req, res, next) => {
