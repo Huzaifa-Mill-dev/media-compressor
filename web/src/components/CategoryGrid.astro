@@ -1,6 +1,7 @@
 ---
 import type { Category, ToolDefinition } from "../../../engine/src/types.ts";
 import { CATEGORIES, shortTitle, toolHref } from "../lib/content";
+import { editorsIn } from "../lib/editors";
 import Icon from "./Icon.astro";
 
 interface Props {
@@ -23,6 +24,14 @@ const { groups } = Astro.props;
               <a href={toolHref(t)}>
                 <span>{shortTitle(t)}</span>
                 <span class={`rt${t.runtimes[0] === "server" ? " server" : ""}`}>{t.runtimes[0] === "server" ? "Server" : "On device"}</span>
+              </a>
+            </li>
+          ))}
+          {editorsIn(category).map((e) => (
+            <li>
+              <a href={`/${e.slug}`}>
+                <span>{e.short}</span>
+                <span class="rt">On device</span>
               </a>
             </li>
           ))}

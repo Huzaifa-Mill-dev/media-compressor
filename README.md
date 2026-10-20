@@ -12,8 +12,9 @@ A free, public alternative to paywalled converter/compressor sites. Drop files, 
 | Documents | DOC/DOCX/ODT/RTF/PPT… → PDF and more (server) |
 | Spreadsheets | XLSX ↔ CSV/JSON in the browser, XLS/ODS/PDF on the server |
 | Fonts | TTF/OTF ↔ WOFF/WOFF2 |
+| Editors | [Edit PDF](web/src/pages/edit-pdf.astro) (`/edit-pdf`): add text, white-out, images, shapes, highlights, freehand and signatures; rotate, reorder and delete pages. Runs entirely in the browser and writes real text/vector content into the original PDF |
 
-The registry of tools, accepted formats and option keys lives in [`engine/src/tools.ts`](engine/src/tools.ts).
+The registry of tools, accepted formats and option keys lives in [`engine/src/tools.ts`](engine/src/tools.ts). Interactive editors don't use the job model; they are standalone pages listed in [`web/src/lib/editors.ts`](web/src/lib/editors.ts).
 
 ## Layout
 
