@@ -1,4 +1,4 @@
-import { EngineError } from "./errors";
+import { EngineError } from "./errors.js";
 
 /**
  * Parse a page-range expression like "1-3, 5, 8-10, 12-end" into 1-based inclusive ranges.

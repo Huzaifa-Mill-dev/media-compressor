@@ -17,7 +17,7 @@ export default defineConfig({
     // Files spin up their own servers on ephemeral ports with isolated temp dirs, but they share the
     // CPU with real encoders; keep parallelism modest so timing-based assertions stay stable.
     fileParallelism: true,
-    maxWorkers: 3,
+    maxWorkers: 2,
     pool: "forks",
   },
 });
