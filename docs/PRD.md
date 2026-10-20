@@ -28,7 +28,9 @@
 5. Keep the existing visual identity (dark theme, Inter, profile pills, side-by-side comparison with synced video, progress, quality score).
 
 ### Non-goals (now)
-User accounts, payments, rate-plan tiers, CDN, Redis/BullMQ, multi-server scaling, mobile apps, OCR, PDF editing, video editing.
+User accounts, payments, rate-plan tiers, CDN, Redis/BullMQ, multi-server scaling, mobile apps, OCR, video editing.
+
+PDF editing is now in scope as an interactive, fully client-side page (`/edit-pdf`, `web/src/pages/edit-pdf.astro` + `web/src/scripts/editor/pdf/`). It sits outside the `Engine.run` job model and the tool registry; it is listed next to the PDF tools via `web/src/lib/editors.ts`.
 
 ---
 
