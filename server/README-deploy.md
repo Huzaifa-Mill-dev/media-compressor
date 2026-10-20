@@ -19,7 +19,7 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
 # ecosystem.config.cjs points PYTHON at it automatically when it exists.
 sudo apt-get install -y python3-venv
 sudo python3 -m venv --system-site-packages /opt/mt-python
-sudo /opt/mt-python/bin/pip install pdf2docx==0.5.13 pymupdf==2.0   # same pins as server/scripts/requirements-pdf2docx.txt
+sudo /opt/mt-python/bin/pip install pdf2docx==0.5.13 pymupdf==1.26.7   # same pins as server/scripts/requirements-pdf2docx.txt
 
 # Node 22 + pm2
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs
