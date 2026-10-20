@@ -29,7 +29,7 @@ Routing per job: **browser** if the tool, formats, options and file size are sup
 
 ## Quick start
 
-Requires Node 22. For the server's real-binary tools install `ffmpeg ghostscript qpdf libreoffice python3-fonttools python3-brotli`, and `pip install -r server/scripts/requirements-pdf2docx.txt` for PDF → Word with `PYTHON` pointing at that interpreter (see [`server/README-deploy.md`](server/README-deploy.md)); without them those tools are simply not offered.
+Requires Node 24 (LTS). For the server's real-binary tools install `ffmpeg ghostscript qpdf libreoffice python3-fonttools python3-brotli`, and `pip install -r server/scripts/requirements-pdf2docx.txt` for PDF → Word with `PYTHON` pointing at that interpreter (see [`server/README-deploy.md`](server/README-deploy.md)); without them those tools are simply not offered.
 
 ```bash
 npm ci && npm --prefix engine ci && npm --prefix web ci
