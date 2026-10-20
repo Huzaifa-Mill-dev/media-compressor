@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const ALL = ["image-compress","image-convert","video-compress","video-convert","video-to-audio","audio-convert","audio-compress","font-convert","pdf-compress","pdf-merge","pdf-split","pdf-to-images","images-to-pdf","document-convert","spreadsheet-convert"];
+const ALL = ["image-compress","image-convert","video-compress","video-convert","video-to-audio","audio-convert","audio-compress","font-convert","pdf-compress","pdf-merge","pdf-split","pdf-to-images","images-to-pdf","pdf-to-docx","document-convert","spreadsheet-convert"];
 const env = { webCodecs: true, wasm: true, workers: true, offscreenCanvas: true, crossOriginIsolated: true };
 const fi = (name: string, size = 1000) => ({ name, size });
 

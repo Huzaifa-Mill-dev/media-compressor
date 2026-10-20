@@ -7,10 +7,10 @@ const env: BrowserEnv = { webCodecs: true, wasm: true, workers: true, offscreenC
 const pdf = [{ name: "a.pdf", size: 1000, head: new TextEncoder().encode("%PDF-1.7\n....") }];
 
 describe("registry integrity", () => {
-  it("has 15 unique tool ids and slugs", () => {
-    expect(tools).toHaveLength(15);
-    expect(new Set(tools.map((t) => t.id)).size).toBe(15);
-    expect(new Set(tools.map((t) => t.slug)).size).toBe(15);
+  it("has 16 unique tool ids and slugs", () => {
+    expect(tools).toHaveLength(16);
+    expect(new Set(tools.map((t) => t.id)).size).toBe(16);
+    expect(new Set(tools.map((t) => t.slug)).size).toBe(16);
   });
   it.each(tools.map((t) => [t.id, t] as const))("%s: defaults valid and showIf refs exist", (_id, t) => {
     const keys = new Set(t.options.map((o) => o.key));

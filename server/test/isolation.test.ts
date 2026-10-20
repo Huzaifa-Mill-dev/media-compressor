@@ -3,7 +3,7 @@ import type { Binaries } from "../src/probe.js";
 import { availableTools, SERVER_TOOLS, toolAvailable } from "../src/tools.js";
 
 const bins = (over: Partial<Binaries>): Binaries => ({
-  ffmpeg: true, ffprobe: true, gs: true, qpdf: true, soffice: true, fonttools: true,
+  ffmpeg: true, ffprobe: true, gs: true, qpdf: true, soffice: true, fonttools: true, pdf2docx: true,
   prlimit: null, heifDec: null, netIsolation: false, officeSafe: false, encoders: new Set(), versions: {},
   ...over,
 });
