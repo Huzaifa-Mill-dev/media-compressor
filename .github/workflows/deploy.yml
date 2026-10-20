@@ -22,6 +22,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg ghostscript qpdf libreoffice-writer libreoffice-calc python3-fonttools python3-brotli fonts-dejavu fonts-liberation util-linux
+      - name: Install pdf2docx (pdf-to-docx tool)
+        run: |
+          python3 -m venv --system-site-packages "$RUNNER_TEMP/mt-python"
+          "$RUNNER_TEMP/mt-python/bin/pip" install -r server/scripts/requirements-pdf2docx.txt
+          echo "PYTHON=$RUNNER_TEMP/mt-python/bin/python" >> "$GITHUB_ENV"
       - name: Allow unprivileged user namespaces (LibreOffice network isolation uses unshare -rn)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
       - run: npm ci && npm --prefix engine ci && npm --prefix web ci

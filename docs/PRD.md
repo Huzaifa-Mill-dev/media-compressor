@@ -21,14 +21,16 @@
 - Deploy target stays EC2 + pm2 via GitHub Actions on push to `main`.
 
 ### Goals
-1. Tools: compress/convert **images, video, audio, fonts, PDFs, documents (docx etc.), spreadsheets** (15 tools, §4).
+1. Tools: compress/convert **images, video, audio, fonts, PDFs, documents (docx etc.), spreadsheets** (16 tools, §4).
 2. Speed: **3 typical photos (2–5 MB) → WebP in < 5 s total** on a mid-range laptop, processed in parallel. (Benchmark test asserts < 8 s in the sandbox.)
 3. Security: no shell injection, path traversal, XSS, zip/decompression bombs, public leaking of other users' filenames.
 4. SEO: one static, crawlable page per tool (title, description, JSON-LD, FAQ).
 5. Keep the existing visual identity (dark theme, Inter, profile pills, side-by-side comparison with synced video, progress, quality score).
 
 ### Non-goals (now)
-User accounts, payments, rate-plan tiers, CDN, Redis/BullMQ, multi-server scaling, mobile apps, OCR, PDF editing, video editing.
+User accounts, payments, rate-plan tiers, CDN, Redis/BullMQ, multi-server scaling, mobile apps, OCR, video editing.
+
+PDF editing is now in scope as an interactive, fully client-side page (`/edit-pdf`, `web/src/pages/edit-pdf.astro` + `web/src/scripts/editor/pdf/`). It sits outside the `Engine.run` job model and the tool registry; it is listed next to the PDF tools via `web/src/lib/editors.ts`.
 
 ---
 

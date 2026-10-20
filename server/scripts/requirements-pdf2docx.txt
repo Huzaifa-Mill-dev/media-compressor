@@ -1,0 +1,6 @@
+# pdf-to-docx tool (server/scripts/pdf_to_docx.py). Installed into a venv created with --system-site-packages,
+# so the apt fontTools/brotli used by font-convert stay visible; point PYTHON at that venv's interpreter.
+# PyMuPDF is AGPL-3.0: fine for this public repo, keep the source published if you deploy a modified copy.
+pdf2docx==0.5.13
+# 1.26.x: 2.x also loads onnxruntime (pymupdf-layout), doubling peak RSS (~265 MB vs ~140 MB) for the same output.
+pymupdf==1.26.7

@@ -17,7 +17,7 @@ export type OptionSpec =
 export type OptionValue = string | number | boolean | undefined;
 export type ResolvedOptions = Record<string, OptionValue>;
 
-type Need = keyof Pick<Binaries, "ffmpeg" | "ffprobe" | "gs" | "qpdf" | "soffice" | "fonttools">;
+type Need = keyof Pick<Binaries, "ffmpeg" | "ffprobe" | "gs" | "qpdf" | "soffice" | "fonttools" | "pdf2docx">;
 
 export interface ServerTool {
   id: ToolId;
@@ -209,6 +209,15 @@ export const SERVER_TOOLS: Record<ToolId, ServerTool> = {
       pageSize: { t: "select", values: ["fit", "a4", "letter"], def: "fit" },
       margin: { t: "range", min: 0, max: 50, def: 0 },
     },
+  },
+  "pdf-to-docx": {
+    id: "pdf-to-docx",
+    queue: "heavy",
+    accepts: ["pdf"],
+    multiInput: false,
+    needs: ["pdf2docx"],
+    timeoutMs: 10 * MIN,
+    options: {},
   },
   "document-convert": {
     id: "document-convert",

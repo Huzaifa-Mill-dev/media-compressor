@@ -9,6 +9,8 @@ export interface Binaries {
   qpdf: boolean;
   soffice: boolean;
   fonttools: boolean;
+  /** pdf2docx (+ PyMuPDF) importable by the configured python → pdf-to-docx. */
+  pdf2docx: boolean;
   /** Path of prlimit if present (child address-space cap). */
   prlimit: string | null;
   /** HEIC/HEIF decoder CLI (libheif-examples) if present. */
@@ -50,13 +52,14 @@ async function ok(cmd: string, args: string[], timeoutMs = 20_000): Promise<{ ok
 
 /** Probe the binaries every tool depends on. Runs once at startup. */
 export async function probeBinaries(python = "python3", opts: { allowUnisolatedOffice?: boolean } = {}): Promise<Binaries> {
-  const [ffmpeg, ffprobe, gs, qpdf, soffice, fonttools, encs, unshare] = await Promise.all([
+  const [ffmpeg, ffprobe, gs, qpdf, soffice, fonttools, pdf2docx, encs, unshare] = await Promise.all([
     which("ffmpeg") ? ok("ffmpeg", ["-hide_banner", "-version"]) : { ok: false, out: "" },
     which("ffprobe") ? ok("ffprobe", ["-hide_banner", "-version"]) : { ok: false, out: "" },
     which("gs") ? ok("gs", ["--version"]) : { ok: false, out: "" },
     which("qpdf") ? ok("qpdf", ["--version"]) : { ok: false, out: "" },
     which("soffice") ? ok("soffice", ["--version"], 60_000) : { ok: false, out: "" },
     ok(python, ["-I", "-c", "import fontTools, brotli; print(fontTools.version)"]),
+    ok(python, ["-I", "-W", "ignore", "-c", "import pymupdf, pdf2docx; print(pymupdf.VersionBind)"], 30_000),
     which("ffmpeg") ? ok("ffmpeg", ["-hide_banner", "-encoders"]) : { ok: false, out: "" },
     which("unshare") ? ok("unshare", ["-rn", "true"], 5_000) : { ok: false, out: "" },
   ]);
@@ -75,6 +78,7 @@ export async function probeBinaries(python = "python3", opts: { allowUnisolatedO
     qpdf: qpdf.ok,
     soffice: soffice.ok,
     fonttools: fonttools.ok,
+    pdf2docx: pdf2docx.ok,
     prlimit: which("prlimit"),
     heifDec: which("heif-dec") ?? which("heif-convert"),
     netIsolation: unshare.ok,
@@ -86,6 +90,7 @@ export async function probeBinaries(python = "python3", opts: { allowUnisolatedO
       qpdf: first(qpdf.out),
       soffice: first(soffice.out),
       fonttools: first(fonttools.out),
+      pdf2docx: first(pdf2docx.out),
     },
   };
 }

@@ -555,6 +555,19 @@ export const tools: ToolDefinition[] = [
       { type: "range", key: "margin", label: "Margin", min: 0, max: 50, step: 1, default: 0, unit: "mm", advanced: true },
     ],
   },
+  {
+    id: "pdf-to-docx",
+    category: "pdf",
+    slug: "pdf-to-word",
+    title: "PDF to Word — Convert PDF to Editable DOCX",
+    description:
+      "Turn a PDF into an editable Word document with real paragraphs, tables and images instead of locked text boxes — free, no sign-up.",
+    accepts: ["pdf"],
+    outputs: ["docx"],
+    multiInput: false,
+    runtimes: ["server"],
+    options: [],
+  },
 
   // ───────────────────────────── Documents ─────────────────────────────
   {

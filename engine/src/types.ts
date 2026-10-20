@@ -22,6 +22,7 @@ export type ToolId =
   | "pdf-split"
   | "pdf-to-images"
   | "images-to-pdf"
+  | "pdf-to-docx"
   | "document-convert"
   | "spreadsheet-convert";
 

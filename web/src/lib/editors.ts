@@ -16,6 +16,14 @@ export interface EditorPage {
 
 export const EDITORS: EditorPage[] = [
   {
+    slug: "edit-pdf",
+    short: "Edit PDF",
+    title: "Edit PDF Online — Add Text, Images, Shapes & Signatures",
+    category: "pdf",
+    description:
+      "Edit PDFs in your browser: add text, white-out, images, shapes, highlights, drawings and signatures, then rotate, reorder or delete pages. Nothing is uploaded.",
+  },
+  {
     slug: "edit-document",
     short: "Edit document",
     title: "Online Word Editor — Edit DOCX Documents in Your Browser",

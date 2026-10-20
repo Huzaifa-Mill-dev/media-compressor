@@ -14,9 +14,14 @@ FROM node:22-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ffmpeg ghostscript qpdf util-linux libheif-examples \
       libreoffice-writer libreoffice-calc libreoffice-impress \
-      python3 python3-fonttools python3-brotli \
+      python3 python3-venv python3-fonttools python3-brotli \
       fonts-dejavu fonts-liberation ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+# pdf-to-docx: pdf2docx in a venv that still sees the apt fontTools/brotli (font-convert uses the same PYTHON).
+COPY server/scripts/requirements-pdf2docx.txt /tmp/req.txt
+RUN python3 -m venv --system-site-packages /opt/mt-python \
+    && /opt/mt-python/bin/pip install --no-cache-dir -r /tmp/req.txt && rm /tmp/req.txt
+ENV PYTHON=/opt/mt-python/bin/python
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000
 COPY --from=build /app/node_modules ./node_modules
