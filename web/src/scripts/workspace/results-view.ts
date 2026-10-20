@@ -177,8 +177,9 @@ function buildDetails(job: Job): HTMLElement {
   if (typeof meta.pages === "number") rows.push(["Pages", String(meta.pages)]);
   if (typeof meta.codec === "string") rows.push(["Codec", meta.codec]);
   if (typeof meta.qualityScore === "number") rows.push(["Quality score", `${meta.qualityScore.toFixed(1)} / 100`]);
+  if (meta.scanned === true) rows.push(["Text", "Looks scanned: pages are kept as images, so the text isn't editable"]);
   rows.push(["Output format", (extOf(result.outputs[0]!.filename) || result.outputs[0]!.mime).toUpperCase()]);
-  const known = new Set(["width", "height", "outputWidth", "outputHeight", "durationSec", "pages", "qualityScore", "codec"]);
+  const known = new Set(["width", "height", "outputWidth", "outputHeight", "durationSec", "pages", "qualityScore", "codec", "scanned"]);
   for (const [k, v] of Object.entries(meta)) {
     if (known.has(k) || (typeof v !== "string" && typeof v !== "number" && typeof v !== "boolean")) continue;
     rows.push([k.replace(/([A-Z])/g, " $1").replace(/^./, (m) => m.toUpperCase()), String(v)]);

@@ -15,6 +15,12 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
   libreoffice-writer libreoffice-calc libreoffice-impress \
   python3 python3-fonttools python3-brotli fonts-dejavu fonts-liberation
 
+# pdf-to-docx: pdf2docx (+ PyMuPDF, OpenCV headless; ~150 MB disk) in a venv that still sees the apt fontTools.
+# ecosystem.config.cjs points PYTHON at it automatically when it exists.
+sudo apt-get install -y python3-venv
+sudo python3 -m venv --system-site-packages /opt/mt-python
+sudo /opt/mt-python/bin/pip install pdf2docx==0.5.13 pymupdf==2.0   # same pins as server/scripts/requirements-pdf2docx.txt
+
 # Node 22 + pm2
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs
 sudo npm i -g pm2

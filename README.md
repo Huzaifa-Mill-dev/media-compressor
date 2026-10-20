@@ -8,7 +8,7 @@ A free, public alternative to paywalled converter/compressor sites. Drop files, 
 |---|---|
 | Images | compress, convert (JPG/PNG/WebP/AVIF/HEIC…), images → PDF |
 | Video / audio | compress, convert, extract audio, compress audio |
-| PDF | compress (server), merge, split, PDF → images |
+| PDF | compress (server), merge, split, PDF → images, PDF → Word/DOCX (server, pdf2docx) |
 | Documents | DOC/DOCX/ODT/RTF/PPT… → PDF and more (server) |
 | Spreadsheets | XLSX ↔ CSV/JSON in the browser, XLS/ODS/PDF on the server |
 | Fonts | TTF/OTF ↔ WOFF/WOFF2 |
@@ -20,7 +20,7 @@ The registry of tools, accepted formats and option keys lives in [`engine/src/to
 ```
 engine/   Framework-agnostic TypeScript: tool registry, routing, worker pool, browser processors, server client
 web/      Astro static site: one crawlable page per tool, workspace UI (imports only engine/src/index.ts)
-server/   Express + TypeScript fallback API: FFmpeg, sharp, Ghostscript, qpdf, LibreOffice, fontTools; serves web/dist
+server/   Express + TypeScript fallback API: FFmpeg, sharp, Ghostscript, qpdf, LibreOffice, fontTools, pdf2docx; serves web/dist
 docs/     PRD.md (product + decisions) and PLAN.md (contracts, server HTTP API)
 ```
 
@@ -28,7 +28,7 @@ Routing per job: **browser** if the tool, formats, options and file size are sup
 
 ## Quick start
 
-Requires Node 22. For the server's real-binary tools install `ffmpeg ghostscript qpdf libreoffice python3-fonttools python3-brotli` (see [`server/README-deploy.md`](server/README-deploy.md)); without them those tools are simply not offered.
+Requires Node 22. For the server's real-binary tools install `ffmpeg ghostscript qpdf libreoffice python3-fonttools python3-brotli`, and `pip install -r server/scripts/requirements-pdf2docx.txt` for PDF → Word with `PYTHON` pointing at that interpreter (see [`server/README-deploy.md`](server/README-deploy.md)); without them those tools are simply not offered.
 
 ```bash
 npm ci && npm --prefix engine ci && npm --prefix web ci

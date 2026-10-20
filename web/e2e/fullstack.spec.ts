@@ -60,6 +60,18 @@ test.describe("real server + built site", () => {
     expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
   });
 
+  test("PDF → Word via the UI returns an editable DOCX", async ({ page }) => {
+    needs("pdf-to-docx");
+    await page.goto("/pdf-to-word");
+    await add(page, [{ name: "letter.pdf", mimeType: "application/pdf", buffer: MIN_PDF }]);
+    await page.click("#run-btn");
+    await expect(page.locator(".result-item")).toHaveCount(1, { timeout: 120_000 });
+    await expect(page.locator(".result-item .runtime-server")).toBeVisible();
+    const buf = await download(page);
+    expect(buf.subarray(0, 2).toString()).toBe("PK");
+    expect(buf.includes(Buffer.from("word/document.xml"))).toBe(true);
+  });
+
   test("PDF compression via the UI never returns a larger file", async ({ page }) => {
     needs("pdf-compress");
     await page.goto("/compress-pdf");

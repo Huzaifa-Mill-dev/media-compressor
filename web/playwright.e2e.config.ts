@@ -32,7 +32,7 @@ export default defineConfig({
       RATE_LIMIT_MAX: "1000",
       PATH: process.env.PATH ?? "",
       SYSTEMROOT: process.env.SYSTEMROOT ?? "",
-      PYTHON: process.platform === "win32" ? "python" : "python3",
+      PYTHON: process.env.PYTHON || (process.platform === "win32" ? "python" : "python3"),
     },
   },
 });

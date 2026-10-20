@@ -18,7 +18,7 @@ export interface Harness {
   cleanup(): Promise<void>;
 }
 
-const PY = process.platform === "win32" ? "python" : "python3";
+const PY = process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
 let binsPromise: Promise<Binaries> | null = null;
 export const getBins = () => (binsPromise ??= probeBinaries(PY, { allowUnisolatedOffice: process.env.ALLOW_UNISOLATED_OFFICE === "1" }).then((b) => (setPrlimit(b.prlimit), b)));
 

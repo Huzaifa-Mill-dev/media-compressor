@@ -21,7 +21,7 @@
 - Deploy target stays EC2 + pm2 via GitHub Actions on push to `main`.
 
 ### Goals
-1. Tools: compress/convert **images, video, audio, fonts, PDFs, documents (docx etc.), spreadsheets** (15 tools, §4).
+1. Tools: compress/convert **images, video, audio, fonts, PDFs, documents (docx etc.), spreadsheets** (16 tools, §4).
 2. Speed: **3 typical photos (2–5 MB) → WebP in < 5 s total** on a mid-range laptop, processed in parallel. (Benchmark test asserts < 8 s in the sandbox.)
 3. Security: no shell injection, path traversal, XSS, zip/decompression bombs, public leaking of other users' filenames.
 4. SEO: one static, crawlable page per tool (title, description, JSON-LD, FAQ).

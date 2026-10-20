@@ -3,6 +3,7 @@ import { processFont } from "./font.js";
 import { processImage } from "./image.js";
 import { processMedia } from "./media.js";
 import { processOffice } from "./office.js";
+import { pdfToDocx } from "./pdf-docx.js";
 import { compressPdf, imagesToPdf, mergePdf, pdfToImages, splitPdf } from "./pdf.js";
 import type { Processor } from "./types.js";
 
@@ -20,6 +21,7 @@ export const PROCESSORS: Record<ToolId, Processor> = {
   "pdf-split": splitPdf,
   "pdf-to-images": pdfToImages,
   "images-to-pdf": imagesToPdf,
+  "pdf-to-docx": pdfToDocx,
   "document-convert": processOffice,
   "spreadsheet-convert": processOffice,
 };

@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import zlib from "node:zlib";
 import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -172,6 +173,50 @@ describe.skipIf(!bins.gs || !bins.qpdf)("ghostscript tools", () => {
     expect(j.status, j.error).toBe("done");
     expect(j.outputs).toHaveLength(3);
     expect((await sharp((await download(h, j, 0)).body).metadata()).format).toBe("png");
+  });
+});
+
+// ---- pdf2docx ---------------------------------------------------------------------------------------
+/** Text of one entry in a ZIP (DOCX) — enough of the format for the files python-docx writes. */
+const zipEntry = (zip: Buffer, name: string): string | null => {
+  for (let o = zip.indexOf("PK\x03\x04"); o >= 0; o = zip.indexOf("PK\x03\x04", o + 4)) {
+    const method = zip.readUInt16LE(o + 8);
+    const size = zip.readUInt32LE(o + 18);
+    const nameLen = zip.readUInt16LE(o + 26);
+    const start = o + 30 + nameLen + zip.readUInt16LE(o + 28);
+    if (zip.toString("utf8", o + 30, o + 30 + nameLen) !== name) continue;
+    const raw = zip.subarray(start, start + size);
+    return (method === 8 ? zlib.inflateRawSync(raw) : raw).toString("utf8");
+  }
+  return null;
+};
+
+describe.skipIf(!bins.pdf2docx)("pdf-to-docx", () => {
+  it("produces a DOCX whose body holds the PDF's text", async () => {
+    const j = await runJob(h, "pdf-to-docx", [{ data: await pdf(2), name: "report.pdf" }], {});
+    expect(j.status, j.error).toBe("done");
+    expect(j.outputs[0].name).toBe("report.docx");
+    const body = (await download(h, j)).body;
+    expect(body.subarray(0, 2).toString()).toBe("PK");
+    const xml = zipEntry(body, "word/document.xml");
+    expect(xml).toContain("Page 1");
+    expect(xml).toContain("Page 2");
+  });
+  it("encrypted / garbage PDFs fail cleanly", async () => {
+    const enc = save("enc-src.pdf", await pdf(1));
+    const encOut = path.join(tmp, "enc.pdf");
+    if (bins.qpdf) {
+      execFileSync("qpdf", ["--encrypt", "u", "o", "256", "--", enc, encOut]);
+      const j = await runJob(h, "pdf-to-docx", [{ data: fs.readFileSync(encOut), name: "e.pdf" }], {});
+      expect(j.status).toBe("error");
+      expect(j.error).toMatch(/password/i);
+    }
+    const bad = Buffer.concat([Buffer.from("%PDF-1.7\n"), Buffer.alloc(500, 7)]);
+    const k = await runJob(h, "pdf-to-docx", [{ data: bad, name: "bad.pdf" }], {});
+    expect(k.status).toBe("error");
+  });
+  it("rejects unknown options", async () => {
+    expect((await upload(h, "pdf-to-docx", [{ data: await pdf(1), name: "a.pdf" }], { format: "doc" })).status).toBe(400);
   });
 });
 

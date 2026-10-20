@@ -95,6 +95,7 @@ const VERBS: Record<ToolId, string> = {
   "pdf-split": "Split",
   "pdf-to-images": "Convert",
   "images-to-pdf": "Create PDF",
+  "pdf-to-docx": "Convert",
   "document-convert": "Convert",
   "spreadsheet-convert": "Convert",
 };
