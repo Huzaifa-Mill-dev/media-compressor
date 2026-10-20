@@ -23,6 +23,14 @@ export const EDITORS: EditorPage[] = [
     description:
       "Edit PDFs in your browser: add text, white-out, images, shapes, highlights, drawings and signatures, then rotate, reorder or delete pages. Nothing is uploaded.",
   },
+  {
+    slug: "edit-document",
+    short: "Edit document",
+    title: "Online Word Editor — Edit DOCX Documents in Your Browser",
+    category: "document",
+    description:
+      "Open, edit and create Word documents in your browser: headings, lists, tables, images and links, then save as DOCX or PDF. Your document stays on your device.",
+  },
 ];
 
 export const editorsIn = (category: Category): EditorPage[] => EDITORS.filter((e) => e.category === category);

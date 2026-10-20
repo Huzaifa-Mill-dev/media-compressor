@@ -12,9 +12,13 @@ A free, public alternative to paywalled converter/compressor sites. Drop files, 
 | Documents | DOC/DOCX/ODT/RTF/PPT… → PDF and more (server) |
 | Spreadsheets | XLSX ↔ CSV/JSON in the browser, XLS/ODS/PDF on the server |
 | Fonts | TTF/OTF ↔ WOFF/WOFF2 |
-| Editors | [Edit PDF](web/src/pages/edit-pdf.astro) (`/edit-pdf`): add text, white-out, images, shapes, highlights, freehand and signatures; rotate, reorder and delete pages. Runs entirely in the browser and writes real text/vector content into the original PDF |
+| Editors | [Edit PDF](web/src/pages/edit-pdf.astro) (`/edit-pdf`): add text, white-out, images, shapes, highlights, freehand and signatures; rotate, reorder and delete pages. Runs entirely in the browser and writes real text/vector content into the original PDF. [Edit document](#document-editor) (`/edit-document`): Word-style editor that opens DOCX/TXT/HTML (ODT/RTF/DOC/PDF via the server) and saves DOCX or PDF |
 
 The registry of tools, accepted formats and option keys lives in [`engine/src/tools.ts`](engine/src/tools.ts). Interactive editors don't use the job model; they are standalone pages listed in [`web/src/lib/editors.ts`](web/src/lib/editors.ts).
+
+### Document editor
+
+`/edit-document` is a Word-style editor ([TipTap](https://tiptap.dev)/ProseMirror) that runs in the browser: open DOCX (mammoth), TXT or HTML, or start blank; headings, fonts, colours, lists, tables, images, links, page breaks, find & replace, A4/Letter pages and a word count; save as DOCX (the `docx` library). The draft autosaves to `localStorage`. Two steps optionally use the server, through the engine's server client and only when `/api/capabilities` lists the tool: opening ODT/RTF/DOC (`document-convert` → DOCX) or PDF (`pdf-to-docx`), and exporting PDF (`document-convert`, `format=pdf`); without the server, PDF export uses the browser's print dialog. The editor code is a lazy chunk loaded only on that page ([`web/src/scripts/editor/doc/`](web/src/scripts/editor/doc/)).
 
 ## Layout
 
@@ -47,7 +51,7 @@ Frontend development: `npm --prefix web run dev` (Astro on :4321, proxies `/api`
 | `npm test` | server: API/security (traversal, hostile names, magic bytes, limits, rate limit), registry drift vs engine, real-binary tool tests, burst load |
 | `npm --prefix engine run test:unit` | pure logic: routing, options, scheduler, WOFF, CSV |
 | `npm --prefix engine run test:browser` | real codecs in Chromium + the image speed benchmark |
-| `npm --prefix web test` | tool pages, forms, workspace behaviour, SEO invariants, real-engine E2E |
+| `npm --prefix web test` | tool pages, forms, workspace behaviour, SEO invariants, real-engine E2E, document editor (DOCX import → edit → DOCX round trip) |
 | `npm --prefix web run test:e2e` | real server + production build, server-only tools through the UI (run `npm run build` first) |
 
 Tests that need a binary skip themselves when it is missing; CI installs everything and runs the whole matrix on every push.
@@ -58,6 +62,7 @@ Tests that need a binary skip themselves when it is missing; CI installs everyth
 - Child processes are only spawned with argument arrays (never a shell), in their own process group with a timeout and memory guard; cancel kills the whole group.
 - Job ids are random UUIDs; files are reachable only through them and are deleted 30 minutes after completion (and on cancel/error and at startup).
 - No shared history: the server exposes aggregate counters only; per-user history lives in `localStorage`.
+- The document editor never uploads by itself: DOCX/TXT/HTML open and DOCX saves happen on the device, imported HTML is stripped of scripts, event handlers and remote images, and only ODT/RTF/DOC/PDF import and PDF export go to the server (same 30-minute deletion).
 - Strict CSP (no inline scripts), COOP/COEP for multithreaded WASM, `nosniff`, sanitized `Content-Disposition`.
 
 ## Deploying

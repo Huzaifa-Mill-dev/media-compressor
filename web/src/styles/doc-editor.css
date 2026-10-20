@@ -1,0 +1,664 @@
+/* ─── /edit-document — Word-style editor. Chrome uses the Hexcode tokens; the page itself is always paper. ─── */
+
+.doc-app {
+  --paper: #ffffff;
+  --ink: #1f1e1d;
+  --ink-muted: #5f5e5c;
+  --paper-rule: #d9d8d6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.doc-restore {
+  margin-top: 0;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.doc-restore[hidden] {
+  display: none;
+}
+.doc-restore-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* File bar */
+.doc-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.doc-name {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.doc-name input {
+  width: 100%;
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  padding: 0.35rem 0.55rem;
+  transition: border-color var(--transition), background var(--transition);
+}
+.doc-name input:hover {
+  border-color: var(--border);
+}
+.doc-name input:focus {
+  border-color: var(--primary);
+  background: var(--bg-input);
+  outline: none;
+}
+.doc-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.doc-bar-actions button:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+/* Toolbars */
+.doc-toolbar {
+  position: sticky;
+  top: var(--sticky-top, 0px);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.35rem;
+  padding: 0.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+.doc-tablebar {
+  position: static;
+  box-shadow: none;
+  background: var(--bg-sunken);
+}
+.doc-toolbar[hidden],
+.doc-find[hidden] {
+  display: none;
+}
+.tb-group {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding-right: 0.35rem;
+  border-right: 1px solid var(--border);
+}
+.tb-group:last-child {
+  border-right: 0;
+}
+.tb-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.tb-btn:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  color: var(--text);
+  border-color: var(--border);
+}
+.tb-btn[aria-pressed="true"] {
+  background: var(--primary-dim);
+  color: var(--accent-text);
+  border-color: var(--primary-border);
+}
+.tb-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tb-btn:focus-visible,
+.tb-text:focus-visible,
+.tb-select:focus-visible,
+.tb-color:has(input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.tb-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+.tb-color input:focus-visible {
+  outline: none;
+}
+.tb-swatch {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 5px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.tb-select {
+  height: 34px;
+  max-width: 9.5rem;
+  padding: 0 0.5rem;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+.tb-select.narrow {
+  max-width: 6.5rem;
+}
+.tb-text {
+  height: 32px;
+  padding: 0 0.65rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tb-text:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.tb-text.danger:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+}
+.tb-text:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tb-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 0.4rem;
+}
+
+/* Find & replace */
+.doc-find {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.find-field input,
+.doc-dialog input[type="text"],
+.doc-dialog input[type="number"] {
+  height: 34px;
+  width: 13rem;
+  max-width: 100%;
+  padding: 0 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-xs);
+}
+.find-field {
+  min-width: 0;
+  flex: 0 1 13rem;
+}
+.find-field input:focus,
+.doc-dialog input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 0;
+  border-color: var(--primary);
+}
+.find-count {
+  min-width: 4.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.find-case {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.find-case input {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+}
+
+/* Desk + page */
+.doc-desk {
+  position: relative;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 1rem;
+  overflow-x: auto;
+  min-width: 0;
+}
+.doc-page {
+  --page-w: 210mm;
+  --page-h: 297mm;
+  --margin: 25.4mm;
+  width: var(--page-w);
+  max-width: 100%;
+  min-height: var(--page-h);
+  margin: 0 auto;
+  padding: var(--margin);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+.doc-page[data-page="letter"] {
+  --page-w: 8.5in;
+  --page-h: 11in;
+}
+.doc-loading {
+  color: var(--ink-muted);
+  font-family: var(--font-body);
+}
+.doc-app[data-state="error"] .doc-loading {
+  color: #b42318;
+}
+
+.doc-drop {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--primary);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  pointer-events: none;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+.doc-desk[data-drag] .doc-drop {
+  display: flex;
+}
+
+/* Document content (paper typography mirrors the DOCX export: Calibri 11pt, 1in margins). */
+.doc-content {
+  min-height: calc(var(--page-h) - 2 * var(--margin));
+  outline: none;
+  font-family: Calibri, Carlito, "Segoe UI", Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.4;
+  color: var(--ink);
+  overflow-wrap: break-word;
+  caret-color: var(--ink);
+}
+.doc-content > * + * {
+  margin-top: 0.55em;
+}
+.doc-content p {
+  min-height: 1.4em;
+}
+.doc-content h1,
+.doc-content h2,
+.doc-content h3,
+.doc-content h4,
+.doc-content h5,
+.doc-content h6 {
+  font-family: inherit;
+  color: inherit;
+  line-height: 1.2;
+  letter-spacing: normal;
+  margin-top: 0.9em;
+}
+.doc-content h1 {
+  font-size: 20pt;
+  font-weight: 700;
+}
+.doc-content h2 {
+  font-size: 16pt;
+  font-weight: 700;
+}
+.doc-content h3 {
+  font-size: 13pt;
+  font-weight: 700;
+}
+.doc-content h4 {
+  font-size: 11pt;
+  font-weight: 700;
+  font-style: italic;
+}
+.doc-content h5,
+.doc-content h6 {
+  font-size: 11pt;
+  font-weight: 600;
+}
+.doc-content > :first-child {
+  margin-top: 0;
+}
+.doc-content ul,
+.doc-content ol {
+  padding-left: 0.5in;
+}
+.doc-content li > p {
+  margin: 0;
+}
+.doc-content li + li {
+  margin-top: 0.2em;
+}
+.doc-content a {
+  color: #1155cc;
+  text-decoration: underline;
+}
+.doc-content blockquote {
+  margin-left: 0.5in;
+  padding-left: 0.75em;
+  border-left: 3px solid var(--paper-rule);
+  font-style: italic;
+  color: #595959;
+}
+.doc-content pre {
+  font-family: Consolas, var(--mono);
+  font-size: 10pt;
+  background: #f3f3f2;
+  padding: 0.6em 0.8em;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+.doc-content code {
+  font-family: Consolas, var(--mono);
+  font-size: 0.95em;
+}
+.doc-content mark {
+  color: inherit;
+  padding: 0;
+}
+.doc-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.doc-content img.ProseMirror-selectednode {
+  outline: 2px solid var(--primary);
+}
+.doc-content hr {
+  border: 0;
+  border-top: 1px solid var(--paper-rule);
+}
+.doc-content table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 0.6em 0;
+}
+.doc-content td,
+.doc-content th {
+  position: relative;
+  border: 1px solid #a6a6a6;
+  padding: 0.25em 0.45em;
+  vertical-align: top;
+  text-align: left;
+  min-width: 2em;
+}
+.doc-content th {
+  font-weight: 700;
+  background: #f2f2f2;
+}
+.doc-content td > p,
+.doc-content th > p {
+  margin: 0;
+}
+.doc-content .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(232, 12, 8, 0.12);
+  pointer-events: none;
+}
+.doc-content .page-break {
+  position: relative;
+  height: 1.6em;
+  margin: 1em calc(-1 * var(--margin));
+  border-top: 1px dashed var(--paper-rule);
+  border-bottom: 1px dashed var(--paper-rule);
+  background: var(--bg-sunken);
+}
+.doc-content .page-break::after {
+  content: "Page break";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.doc-content .page-break.ProseMirror-selectednode {
+  outline: 2px solid var(--primary);
+}
+.doc-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #8a8987;
+}
+.doc-content .find-hit {
+  background: #ffe48a;
+  border-radius: 2px;
+}
+.doc-content .find-hit.current {
+  background: #ff9632;
+  outline: 1px solid #c25e00;
+}
+.doc-content .ProseMirror-gapcursor::after {
+  border-top-color: var(--ink);
+}
+
+/* Status bar */
+.doc-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.doc-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.doc-draft {
+  margin-left: auto;
+}
+.doc-message {
+  min-height: 1.3em;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.doc-message[data-kind="error"] {
+  color: var(--red);
+  font-weight: 500;
+}
+
+/* Dialogs */
+.doc-dialog {
+  margin: auto;
+  width: min(420px, calc(100vw - 2rem));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  padding: 0;
+}
+.doc-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: none;
+}
+.doc-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.doc-dialog h2 {
+  font-size: 1.05rem;
+}
+.doc-dialog .option-group > span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.doc-dialog input[type="text"],
+.doc-dialog input[type="number"] {
+  width: 100%;
+}
+.doc-dialog-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.doc-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.doc-dialog-actions .danger {
+  margin-right: auto;
+}
+.doc-dialog-actions [hidden] {
+  display: none;
+}
+
+/* Phones: the page goes full width with smaller margins; long toolbars scroll sideways inside themselves. */
+@media (max-width: 720px) {
+  .doc-desk {
+    padding: 0.75rem 0.5rem;
+    border-radius: var(--radius-sm);
+  }
+  .doc-page {
+    --margin: 1.1rem;
+    width: 100%;
+    min-height: 60vh;
+  }
+  .doc-content {
+    min-height: 50vh;
+  }
+  .doc-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tb-group {
+    flex: 0 0 auto;
+  }
+  .tb-text {
+    flex: 0 0 auto;
+  }
+  .doc-bar-actions {
+    width: 100%;
+  }
+  .doc-bar-actions > button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .doc-draft {
+    margin-left: 0;
+  }
+}
+
+@media print {
+  body > header,
+  body > footer,
+  .skip-link,
+  .breadcrumbs,
+  .doc-head,
+  .doc-about,
+  .doc-restore,
+  .doc-bar,
+  .doc-toolbar,
+  .doc-find,
+  .doc-status,
+  .doc-message,
+  .doc-drop {
+    display: none !important;
+  }
+  body,
+  .container {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .doc-desk {
+    padding: 0;
+    border: 0;
+    background: none;
+    overflow: visible;
+  }
+  .doc-page {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .doc-content {
+    min-height: 0;
+  }
+  .doc-content .page-break {
+    height: 0;
+    margin: 0;
+    border: 0;
+    background: none;
+    break-after: page;
+  }
+  .doc-content .page-break::after,
+  .doc-content p.is-editor-empty:first-child::before {
+    content: none;
+  }
+  .doc-content .find-hit {
+    background: none;
+    outline: 0;
+  }
+}
