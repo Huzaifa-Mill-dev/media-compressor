@@ -15,7 +15,11 @@ test("document editor loads under the production CSP, imports, saves DOCX and ex
     if (m.type() === "error" && !/Failed to load resource.*\/api\/stats/.test(m.text())) problems.push(m.text());
   });
   page.on("pageerror", (e) => problems.push(`pageerror: ${e.message}`));
-  page.on("requestfailed", (r) => problems.push(`requestfailed: ${r.url()}`));
+  page.on("requestfailed", (r) => {
+    // The engine closes a job's SSE progress stream once the job is done, which Chromium reports as aborted.
+    if (/\/api\/jobs\/[^/]+\/events$/.test(new URL(r.url()).pathname) && /ERR_ABORTED/.test(r.failure()?.errorText ?? "")) return;
+    problems.push(`requestfailed: ${r.url()} (${r.failure()?.errorText ?? "?"})`);
+  });
 
   const res = await page.goto("/edit-document");
   expect(res?.headers()["content-security-policy"]).toContain("script-src 'self'");
@@ -38,6 +42,7 @@ test("document editor loads under the production CSP, imports, saves DOCX and ex
     const [pdf] = await Promise.all([page.waitForEvent("download", { timeout: 120_000 }), page.click("#doc-save-pdf")]);
     expect(pdf.suggestedFilename()).toBe("sample.pdf");
     expect(fs.readFileSync((await pdf.path())!).subarray(0, 5).toString()).toBe("%PDF-");
+    await expect(page.locator("#doc-message")).toHaveText("Exported as PDF.");
   } else {
     await page.evaluate(() => (window.print = () => void ((window as unknown as { __printed: number }).__printed = 1)));
     await page.click("#doc-save-pdf");
