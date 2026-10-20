@@ -18,6 +18,8 @@ function findChromium(): string | undefined {
   return undefined;
 }
 
+const PORT = Number(process.env.TEST_PORT ?? 4322);
+
 export default defineConfig({
   testDir: "./test",
   timeout: 60_000,
@@ -26,7 +28,7 @@ export default defineConfig({
   workers: process.env.CI ? 2 : 4,
   reporter: [["list"]],
   use: {
-    baseURL: "http://127.0.0.1:4321",
+    baseURL: `http://127.0.0.1:${PORT}`,
     acceptDownloads: true,
     trace: "retain-on-failure",
     ...devices["Desktop Chrome"],
@@ -34,9 +36,9 @@ export default defineConfig({
   },
   webServer: {
     // Test build: mock engine hook enabled, written to dist-test so dist/ stays a production build.
-    command: "npm run build && npx astro preview --port 4321 --host 127.0.0.1",
-    env: { PUBLIC_TEST_HOOKS: "1", OUT_DIR: "dist-test", SITE_URL: "http://localhost:3000" },
-    url: "http://127.0.0.1:4321/",
+    command: `npm run build && npx astro preview --port ${PORT} --host 127.0.0.1`,
+    env: { PUBLIC_TEST_HOOKS: "1", OUT_DIR: "dist-test", SITE_URL: "http://localhost:3000", ASTRO_TELEMETRY_DISABLED: "1" },
+    url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
     timeout: 240_000,
   },

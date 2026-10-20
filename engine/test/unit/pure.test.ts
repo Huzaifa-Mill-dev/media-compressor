@@ -93,6 +93,7 @@ describe("ranges / csv / probe", () => {
     expect(() => parseRanges("11", 10)).toThrow();
     expect(() => parseRanges("a", 10)).toThrow();
     expect(() => parseRanges("", 10)).toThrow();
+    expect(() => parseRanges("1-2,".repeat(5000) + "1-2", 10)).toThrow(/Too many ranges/);
   });
   it("csv quoting round-trips with BOM", () => {
     const rows = [["a,b", 'q"t', "line\nbreak", " pad "], ["1", "", "é", "x"]];
