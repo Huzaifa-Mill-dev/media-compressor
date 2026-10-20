@@ -171,11 +171,11 @@ export async function fileToHtml(file: File, onProgress: ProgressFn, signal: Abo
       return docxToHtml(await out.arrayBuffer());
     }
     case "pdf": {
-      // The "pdf-to-docx" server tool (pdf2docx) is added to the registry separately; until the server
-      // advertises it in /api/capabilities, PDFs are pointed at the PDF editor instead.
+      // pdf2docx on the server rebuilds paragraphs, tables and images; the result opens like any DOCX.
       if (!(await serverHas("pdf-to-docx"))) {
-        throw new ImportError("Turning a PDF into an editable document needs our conversion server, which isn't available right now. To annotate a PDF instead, use the PDF editor.");
+        throw new ImportError("Turning a PDF into an editable document needs our conversion server, which isn't available right now. Try again later, or use Edit PDF (/edit-pdf) to annotate the PDF itself.");
       }
+      onProgress({ stage: "uploading", percent: 0, runtime: "server" });
       const out = await runServerTool("pdf-to-docx", file, {}, onProgress, signal);
       return docxToHtml(await out.arrayBuffer());
     }

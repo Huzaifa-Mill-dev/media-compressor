@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import mammoth from "mammoth";
-import { collectErrors, expectNoHorizontalScroll } from "./helpers";
+import { collectErrors, expectNoHorizontalScroll, useMock } from "./helpers";
 
 /** Hand-written Word-style DOCX (see fixtures/make-sample-docx.mjs). */
 const SAMPLE = path.join(import.meta.dirname, "fixtures", "sample.docx");
@@ -275,11 +275,31 @@ test.describe("Document editor", () => {
     expect(uploaded).toContain('filename="Report.docx"');
   });
 
-  test("opening a PDF without the pdf-to-docx server tool explains what to do", async ({ page }) => {
+  test("opening a PDF runs pdf-to-docx through the engine and loads the DOCX", async ({ page }) => {
+    // The mock engine echoes its input, so a "PDF" carrying DOCX bytes stands in for the server's pdf2docx result.
+    await useMock(page, { serverTools: ["pdf-to-docx"], steps: 6, stepMs: 150 });
+    await openEditor(page);
+    const seen: string[] = [];
+    await page.exposeFunction("__seen", (t: string) => seen.push(t));
+    await page.evaluate(() => {
+      const m = document.getElementById("doc-message")!;
+      new MutationObserver(() => (window as unknown as { __seen: (t: string) => void }).__seen(m.textContent ?? "")).observe(m, { childList: true, characterData: true, subtree: true });
+    });
+    await page.setInputFiles("#doc-file-input", { name: "scan.pdf", mimeType: "application/pdf", buffer: fs.readFileSync(SAMPLE) });
+    await expect(page.locator("#doc-message")).toHaveText("Opened scan.pdf.");
+    await expect(content(page).locator("h1")).toHaveText("Quarterly Report");
+    await expect(content(page).locator("th")).toHaveText(["Region", "Revenue"]);
+    await expect(page.locator("#doc-name")).toHaveValue("scan");
+    expect(seen.some((t) => /^(Uploading|Converting) scan\.pdf… \d+%$/.test(t)), seen.join(" | ")).toBe(true);
+  });
+
+  test("opening a PDF when the server doesn't offer pdf-to-docx explains what to do", async ({ page }) => {
+    await useMock(page, { serverTools: [] });
     await openEditor(page);
     await page.setInputFiles("#doc-file-input", { name: "scan.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n%%EOF\n") });
     await expect(page.locator("#doc-message")).toHaveAttribute("data-kind", "error");
-    await expect(page.locator("#doc-message")).toContainText("PDF");
+    await expect(page.locator("#doc-message")).toContainText("needs our conversion server");
+    await expect(page.locator("#doc-message")).toContainText("Edit PDF");
   });
 
   test("toolbar is a single tab stop with arrow-key navigation; Esc returns to the page", async ({ page }) => {

@@ -483,7 +483,7 @@ export function start(app: HTMLElement): void {
     try {
       const { html, warnings } = await fileToHtml(
         file,
-        (p) => say(`${p.stage === "uploading" ? "Uploading" : "Converting"} ${file.name}… ${Math.round(p.percent)}%`),
+        (p) => say(`${p.stage === "uploading" ? "Uploading" : p.stage === "queued" ? "Waiting for the server with" : "Converting"} ${file.name}… ${Math.round(p.percent)}%`),
         ctl.signal,
       );
       editor.commands.setContent(html || "<p></p>", { emitUpdate: false });
