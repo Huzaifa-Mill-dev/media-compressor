@@ -1,0 +1,306 @@
+---
+import Icon from "../components/Icon.astro";
+import Layout from "../layouts/Layout.astro";
+import { CATEGORIES, SITE_NAME } from "../lib/content";
+import { EDITORS } from "../lib/editors";
+import "../styles/doc-editor.css";
+
+const editor = EDITORS.find((e) => e.slug === "edit-document")!;
+const site = Astro.site ?? new URL("http://localhost:3000");
+const url = new URL(`/${editor.slug}`, site).href;
+const cat = CATEGORIES[editor.category];
+const title = `${editor.title} | ${SITE_NAME}`;
+
+const faqs = [
+  {
+    q: "Is my document uploaded?",
+    a: "No. Opening, editing, autosaving and saving as DOCX all happen in your browser. Only two optional steps use our server: opening ODT, RTF, DOC or PDF files, and exporting a PDF. Those files are deleted automatically within 30 minutes. When the server isn't available, PDF export uses your browser's print dialog instead.",
+  },
+  {
+    q: "What is kept when I open a Word file?",
+    a: "Headings, paragraphs, bold, italic, underline and strikethrough, font sizes, highlights, alignment, indents, bulleted and numbered lists, tables, images, links and page breaks. Advanced layout such as columns, text boxes, headers, footers, comments and tracked changes is not editable here.",
+  },
+  {
+    q: "Where is my draft saved?",
+    a: "Every change is saved to your browser's local storage on this device, and you are offered the draft the next time you open the editor. Clearing site data, or private browsing, removes it, so save a DOCX copy of anything important.",
+  },
+  {
+    q: "Which keyboard shortcuts work?",
+    a: "Ctrl or Cmd with B, I and U for bold, italic and underline; Z and Shift+Z to undo and redo; K to add a link; F to find and replace; S to save a DOCX; Enter for a page break; ] and [ to indent and outdent. Alt+F10 moves to the toolbar, the arrow keys move between its buttons and Esc returns to the page.",
+  },
+];
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: editor.short,
+    description: editor.description,
+    url,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Any (web browser)",
+    browserRequirements: "Requires JavaScript and a modern browser",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    featureList: ["Input: DOCX, ODT, RTF, TXT, HTML", "Output: DOCX, PDF", "Edits on your device"],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", site).href },
+      { "@type": "ListItem", position: 2, name: `${cat.label} tools`, item: new URL(`/tools/${editor.category}`, site).href },
+      { "@type": "ListItem", position: 3, name: editor.short, item: url },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+  },
+];
+
+/** 24×24 stroke icons (Lucide shapes). */
+const I = {
+  file: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6", "M12 18v-6", "M9 15h6"],
+  open: ["m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"],
+  save: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"],
+  pdf: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6", "M9 15h6", "M9 11h2"],
+  undo: ["M9 14 4 9l5-5", "M4 9h10.5a5.5 5.5 0 0 1 0 11H11"],
+  redo: ["m15 14 5-5-5-5", "M20 9H9.5a5.5 5.5 0 0 0 0 11H13"],
+  bold: ["M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"],
+  italic: ["M19 4h-9", "M14 20H5", "M15 4 9 20"],
+  underline: ["M6 4v6a6 6 0 0 0 12 0V4", "M4 20h16"],
+  strike: ["M16 4H9a3 3 0 0 0-2.83 4", "M14 12a4 4 0 0 1 0 8H6", "M4 12h16"],
+  color: ["m6 16 6-12 6 12", "M8 12h8"],
+  highlight: ["m9 11-6 6v3h9l3-3", "m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"],
+  clear: ["M4 7V4h16v3", "M5 20h6", "M13 4 8 20", "m15 15 5 5", "m20 15-5 5"],
+  alignLeft: ["M21 6H3", "M15 12H3", "M17 18H3"],
+  alignCenter: ["M21 6H3", "M17 12H7", "M19 18H5"],
+  alignRight: ["M21 6H3", "M21 12H9", "M21 18H7"],
+  alignJustify: ["M3 6h18", "M3 12h18", "M3 18h18"],
+  bullets: ["M3 6h.01", "M3 12h.01", "M3 18h.01", "M8 6h13", "M8 12h13", "M8 18h13"],
+  numbers: ["M10 6h11", "M10 12h11", "M10 18h11", "M4 6h1v4", "M4 10h2", "M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"],
+  outdent: ["m7 8-4 4 4 4", "M21 6H11", "M21 12H11", "M21 18H11"],
+  indent: ["m3 8 4 4-4 4", "M21 6H11", "M21 12H11", "M21 18H11"],
+  link: ["M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"],
+  image: ["M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", "M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z", "M21 15l-5-5L5 21"],
+  table: ["M3 3h18v18H3z", "M3 9h18", "M3 15h18", "M12 3v18"],
+  pageBreak: ["M4 4v5h16V4", "M4 20v-5h16v5", "M2 12h2", "M8 12h2", "M14 12h2", "M20 12h2"],
+  search: ["M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z", "m21 21-4.3-4.3"],
+  close: ["M18 6 6 18", "M6 6l12 12"],
+  up: ["m18 15-6-6-6 6"],
+  down: ["m6 9 6 6 6-6"],
+};
+const sizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72];
+const highlights = [
+  ["yellow", "Yellow", "#ffff00"],
+  ["green", "Green", "#00ff00"],
+  ["cyan", "Cyan", "#00ffff"],
+  ["magenta", "Pink", "#ff00ff"],
+  ["lightGray", "Grey", "#c0c0c0"],
+];
+---
+<Layout title={title} description={editor.description} jsonLd={jsonLd}>
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li><a href={`/tools/${editor.category}`}>{cat.label}</a></li>
+      <li aria-current="page">{editor.short}</li>
+    </ol>
+  </nav>
+
+  <header class="page-head doc-head">
+    <h1>{editor.short}</h1>
+    <p class="lead">{editor.description}</p>
+  </header>
+
+  <section class="doc-app" id="doc-app" aria-label="Document editor" data-state="loading">
+    <div class="doc-restore notice" id="doc-restore" role="region" aria-label="Unsaved draft" hidden>
+      <p id="doc-restore-text">You have an unsaved draft from an earlier visit.</p>
+      <div class="doc-restore-actions">
+        <button type="button" class="btn-primary" id="doc-restore-yes">Restore draft</button>
+        <button type="button" class="btn-secondary" id="doc-restore-no">Discard it</button>
+      </div>
+    </div>
+
+    <div class="doc-bar">
+      <label class="doc-name">
+        <span class="visually-hidden">Document name</span>
+        <input id="doc-name" type="text" value="Untitled document" maxlength="120" autocomplete="off" spellcheck="false" />
+      </label>
+      <div class="doc-bar-actions">
+        <button type="button" class="btn-secondary" id="doc-new"><Icon paths={I.file} size={16} />New</button>
+        <button type="button" class="btn-secondary" id="doc-open"><Icon paths={I.open} size={16} />Open…</button>
+        <button type="button" class="btn-primary" id="doc-save-docx"><Icon paths={I.save} size={16} />Save DOCX</button>
+        <button type="button" class="btn-secondary" id="doc-save-pdf"><Icon paths={I.pdf} size={16} />Export PDF</button>
+      </div>
+      <input type="file" id="doc-file-input" class="visually-hidden" tabindex="-1" aria-hidden="true" accept=".docx,.odt,.rtf,.doc,.txt,.text,.html,.htm,.pdf" />
+      <input type="file" id="doc-image-input" class="visually-hidden" tabindex="-1" aria-hidden="true" accept="image/png,image/jpeg,image/gif,image/webp" />
+    </div>
+
+    <div class="doc-toolbar" id="doc-toolbar" role="toolbar" aria-label="Formatting" aria-controls="doc-editor">
+      <div class="tb-group">
+        <button type="button" class="tb-btn" data-cmd="undo" aria-label="Undo" title="Undo (Ctrl+Z)"><Icon paths={I.undo} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="redo" aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><Icon paths={I.redo} size={16} /></button>
+      </div>
+      <div class="tb-group">
+        <select id="tb-style" class="tb-select" aria-label="Paragraph style" title="Paragraph style">
+          <option value="paragraph">Normal text</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+          <option value="h4">Heading 4</option>
+          <option value="h5">Heading 5</option>
+          <option value="h6">Heading 6</option>
+          <option value="blockquote">Quote</option>
+          <option value="codeBlock">Code</option>
+        </select>
+        <select id="tb-size" class="tb-select narrow" aria-label="Font size" title="Font size">
+          <option value="">Size</option>
+          {sizes.map((s) => <option value={`${s}pt`}>{s}</option>)}
+        </select>
+      </div>
+      <div class="tb-group">
+        <button type="button" class="tb-btn" data-cmd="bold" aria-pressed="false" aria-label="Bold" title="Bold (Ctrl+B)"><Icon paths={I.bold} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="italic" aria-pressed="false" aria-label="Italic" title="Italic (Ctrl+I)"><Icon paths={I.italic} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="underline" aria-pressed="false" aria-label="Underline" title="Underline (Ctrl+U)"><Icon paths={I.underline} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="strike" aria-pressed="false" aria-label="Strikethrough" title="Strikethrough"><Icon paths={I.strike} size={16} /></button>
+        <label class="tb-btn tb-color" title="Text colour">
+          <Icon paths={I.color} size={16} />
+          <span class="tb-swatch" id="tb-color-swatch" aria-hidden="true"></span>
+          <input type="color" id="tb-color" value="#000000" aria-label="Text colour" />
+        </label>
+        <select id="tb-highlight" class="tb-select narrow" aria-label="Highlight" title="Highlight">
+          <option value="">Highlight</option>
+          {highlights.map(([, label, hex]) => <option value={hex}>{label}</option>)}
+          <option value="none">None</option>
+        </select>
+        <button type="button" class="tb-btn" data-cmd="clear" aria-label="Clear formatting" title="Clear formatting"><Icon paths={I.clear} size={16} /></button>
+      </div>
+      <div class="tb-group">
+        <button type="button" class="tb-btn" data-cmd="align-left" aria-pressed="false" aria-label="Align left" title="Align left"><Icon paths={I.alignLeft} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="align-center" aria-pressed="false" aria-label="Centre" title="Centre"><Icon paths={I.alignCenter} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="align-right" aria-pressed="false" aria-label="Align right" title="Align right"><Icon paths={I.alignRight} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="align-justify" aria-pressed="false" aria-label="Justify" title="Justify"><Icon paths={I.alignJustify} size={16} /></button>
+      </div>
+      <div class="tb-group">
+        <button type="button" class="tb-btn" data-cmd="bullets" aria-pressed="false" aria-label="Bulleted list" title="Bulleted list"><Icon paths={I.bullets} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="numbers" aria-pressed="false" aria-label="Numbered list" title="Numbered list"><Icon paths={I.numbers} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="outdent" aria-label="Decrease indent" title="Decrease indent (Ctrl+[)"><Icon paths={I.outdent} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="indent" aria-label="Increase indent" title="Increase indent (Ctrl+])"><Icon paths={I.indent} size={16} /></button>
+      </div>
+      <div class="tb-group">
+        <button type="button" class="tb-btn" data-cmd="link" aria-pressed="false" aria-label="Link" title="Link (Ctrl+K)"><Icon paths={I.link} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="image" aria-label="Insert image" title="Insert image"><Icon paths={I.image} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="table" aria-label="Insert table" title="Insert table"><Icon paths={I.table} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="page-break" aria-label="Insert page break" title="Page break (Ctrl+Enter)"><Icon paths={I.pageBreak} size={16} /></button>
+        <button type="button" class="tb-btn" data-cmd="find" aria-pressed="false" aria-label="Find and replace" title="Find and replace (Ctrl+F)"><Icon paths={I.search} size={16} /></button>
+      </div>
+    </div>
+
+    <div class="doc-toolbar doc-tablebar" id="doc-tablebar" role="toolbar" aria-label="Table" aria-controls="doc-editor" hidden>
+      <span class="tb-label" aria-hidden="true">Table</span>
+      <button type="button" class="tb-text" data-cmd="row-before">Row above</button>
+      <button type="button" class="tb-text" data-cmd="row-after">Row below</button>
+      <button type="button" class="tb-text" data-cmd="row-delete">Delete row</button>
+      <button type="button" class="tb-text" data-cmd="col-before">Column left</button>
+      <button type="button" class="tb-text" data-cmd="col-after">Column right</button>
+      <button type="button" class="tb-text" data-cmd="col-delete">Delete column</button>
+      <button type="button" class="tb-text" data-cmd="header-row">Header row</button>
+      <button type="button" class="tb-text" data-cmd="merge">Merge cells</button>
+      <button type="button" class="tb-text" data-cmd="split">Split cell</button>
+      <button type="button" class="tb-text danger" data-cmd="table-delete">Delete table</button>
+    </div>
+
+    <div class="doc-find" id="doc-find" role="search" aria-label="Find and replace" hidden>
+      <label class="find-field"><span class="visually-hidden">Find</span><input id="find-q" type="search" placeholder="Find" autocomplete="off" spellcheck="false" /></label>
+      <span class="find-count" id="find-count" role="status" aria-live="polite"></span>
+      <button type="button" class="tb-btn" id="find-prev" aria-label="Previous match" title="Previous (Shift+Enter)"><Icon paths={I.up} size={16} /></button>
+      <button type="button" class="tb-btn" id="find-next" aria-label="Next match" title="Next (Enter)"><Icon paths={I.down} size={16} /></button>
+      <label class="find-case"><input type="checkbox" id="find-case" /> Match case</label>
+      <label class="find-field"><span class="visually-hidden">Replace with</span><input id="find-r" type="text" placeholder="Replace with" autocomplete="off" spellcheck="false" /></label>
+      <button type="button" class="tb-text" id="find-replace">Replace</button>
+      <button type="button" class="tb-text" id="find-replace-all">Replace all</button>
+      <button type="button" class="tb-btn" id="find-close" aria-label="Close find and replace" title="Close (Esc)"><Icon paths={I.close} size={16} /></button>
+    </div>
+
+    <div class="doc-desk" id="doc-desk">
+      <div class="doc-page" id="doc-page" data-page="a4">
+        <div id="doc-editor" class="doc-editor-mount">
+          <p class="doc-loading" id="doc-loading">Loading the editor…</p>
+        </div>
+      </div>
+      <div class="doc-drop" id="doc-drop" aria-hidden="true"><p>Drop a document to open it</p></div>
+    </div>
+
+    <div class="doc-status">
+      <span id="doc-count">0 words</span>
+      <label class="doc-page-size">
+        Page
+        <select id="doc-page-size" class="tb-select narrow" aria-label="Page size">
+          <option value="a4">A4</option>
+          <option value="letter">Letter</option>
+        </select>
+      </label>
+      <span id="doc-draft" class="doc-draft"></span>
+    </div>
+    <p class="doc-message" id="doc-message" role="status" aria-live="polite"></p>
+  </section>
+
+  <dialog class="doc-dialog" id="doc-link-dialog" aria-labelledby="doc-link-title">
+    <form method="dialog" class="doc-dialog-body" id="doc-link-form">
+      <h2 id="doc-link-title">Link</h2>
+      <label class="option-group">
+        <span>Web address</span>
+        <input type="text" inputmode="url" id="doc-link-url" placeholder="https://example.com" required autocomplete="off" spellcheck="false" />
+      </label>
+      <div class="doc-dialog-actions">
+        <button type="button" class="btn-secondary danger" id="doc-link-remove">Remove link</button>
+        <button type="button" class="btn-secondary" id="doc-link-cancel">Cancel</button>
+        <button type="submit" class="btn-primary" value="ok">Apply</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="doc-dialog" id="doc-table-dialog" aria-labelledby="doc-table-title">
+    <form method="dialog" class="doc-dialog-body" id="doc-table-form">
+      <h2 id="doc-table-title">Insert table</h2>
+      <div class="doc-dialog-grid">
+        <label class="option-group"><span>Rows</span><input type="number" id="doc-table-rows" min="1" max="50" value="3" required /></label>
+        <label class="option-group"><span>Columns</span><input type="number" id="doc-table-cols" min="1" max="12" value="3" required /></label>
+      </div>
+      <label class="find-case"><input type="checkbox" id="doc-table-header" checked /> First row is a header</label>
+      <div class="doc-dialog-actions">
+        <button type="button" class="btn-secondary" id="doc-table-cancel">Cancel</button>
+        <button type="submit" class="btn-primary" value="ok">Insert</button>
+      </div>
+    </form>
+  </dialog>
+
+  <section class="card prose info-grid doc-about" aria-label="About this editor">
+    <div>
+      <h2>How to use</h2>
+      <ol>
+        <li>Open a Word document (DOCX), drop one onto the page, or just start typing in the blank page.</li>
+        <li>Format with the toolbar: headings, fonts, colours, lists, tables, images, links and page breaks.</li>
+        <li>Press “Save DOCX” to download a Word file, or “Export PDF” for a PDF.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Formats &amp; privacy</h2>
+      <p><strong>Open:</strong> DOCX, TXT and HTML on your device; ODT, RTF, DOC and PDF with our conversion server.</p>
+      <p><strong>Save:</strong> DOCX on your device; PDF on our server, or with your browser's print dialog.</p>
+      <p>Your draft is autosaved in this browser only. <a href="/privacy">Read the privacy details</a>.</p>
+    </div>
+  </section>
+
+  <section class="card prose faq doc-about" aria-labelledby="faq-title">
+    <h2 id="faq-title">Frequently asked questions</h2>
+    {faqs.map((f) => <details><summary>{f.q}</summary><p>{f.a}</p></details>)}
+  </section>
+</Layout>
+
+<script>
+  import "../scripts/editor/doc/boot.ts";
+</script>
