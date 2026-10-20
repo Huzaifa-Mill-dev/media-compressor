@@ -5,7 +5,7 @@
   "description": "Browser-first media toolkit with a TypeScript/Express fallback server (images, video, audio, fonts, PDF, documents, spreadsheets)",
   "type": "module",
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=24"
   },
   "scripts": {
     "build": "npm --prefix web run build && npm run build:server",

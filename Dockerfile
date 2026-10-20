@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # ---- build: compile the server and the static site -------------------------------------------------
-FROM node:22-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY engine/package.json engine/package-lock.json engine/
@@ -10,7 +10,7 @@ COPY . .
 RUN npm run build:server && npm --prefix web run build && npm prune --omit=dev
 
 # ---- runtime: Node + the native tools the fallback API shells out to ------------------------------
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ffmpeg ghostscript qpdf util-linux libheif-examples \
       libreoffice-writer libreoffice-calc libreoffice-impress \

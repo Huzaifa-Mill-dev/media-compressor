@@ -21,8 +21,8 @@ sudo apt-get install -y python3-venv
 sudo python3 -m venv --system-site-packages /opt/mt-python
 sudo /opt/mt-python/bin/pip install pdf2docx==0.5.13 pymupdf==1.26.7   # same pins as server/scripts/requirements-pdf2docx.txt
 
-# Node 22 + pm2
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs
+# Node 24 LTS + pm2
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash - && sudo apt-get install -y nodejs
 sudo npm i -g pm2
 ```
 
@@ -40,12 +40,12 @@ unshare -rn true && echo isolation-ok
 Also set the instance to IMDSv2-required with hop limit 1. Plain `docker run` usually cannot `unshare` (default seccomp);
 run the container with a profile that allows user namespaces, or set `ALLOW_UNISOLATED_OFFICE=1` to accept the SSRF risk.
 
-Then clone to `/home/ubuntu/media-compressor`, run `npm ci && npm --prefix engine ci && npm --prefix web ci && npm run build`
-and `pm2 start "npm start" --name media-compressor && pm2 save && pm2 startup`.
+Then clone to `/home/ubuntu/media-compressor`, run `sudo npm i -g pm2 && pm2 startup` once, and let the first deploy do the rest.
 
 The GitHub Action (`.github/workflows/deploy.yml`) runs the tests on every PR and push, and deploys on push to `main`
-(needs secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`). Building the Astro site on the box needs the swapfile; if it
-still runs out of memory, build in CI and copy `web/dist` and `server/dist` instead.
+(needs secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`). The site and server are **built in CI**: the box only receives
+`web/dist` + `server/dist`, checks out the same commit, runs `npm ci --omit=dev` (the server's few runtime packages) and
+restarts pm2 from `ecosystem.config.cjs`. The engine/web `node_modules` are not needed on the box.
 
 ## nginx in front of the app
 
