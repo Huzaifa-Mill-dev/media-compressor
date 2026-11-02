@@ -35,6 +35,22 @@ const qpdfCheck = (data: Buffer) => {
 };
 
 // ---- images / images-to-pdf (sharp, pdf-lib: no external binaries) ---------------------------------
+describe("image webp", () => {
+  it("flat graphic png -> webp uses lossless instead of growing", async () => {
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="600"><g opacity="0.08"><rect width="1440" height="600" fill="#0b0b2a"/>`;
+    for (let i = 0; i < 8; i++) {
+      const x = 40 + (i % 4) * 350, y = 40 + Math.floor(i / 4) * 280;
+      svg += `<rect x="${x}" y="${y}" width="320" height="250" rx="12" fill="#fff"/>`;
+      for (let l = 0; l < 10; l++) for (let k = 0; k < 12; k++) svg += `<circle cx="${x + 20 + k * 14 + (l % 3)}" cy="${y + 24 + l * 22}" r="${3 + ((i + k + l) % 3)}" fill="#333"/>`;
+    }
+    const data = await sharp(Buffer.from(svg + "</g></svg>")).png({ compressionLevel: 9 }).toBuffer();
+    const j = await runJob(h, "image-compress", [{ data, name: "ui.png" }], { format: "webp", quality: 80 });
+    const out = (await download(h, j, 0)).body as Buffer;
+    expect((await sharp(out).metadata()).format).toBe("webp");
+    expect(out.length).toBeLessThan(data.length);
+  });
+});
+
 describe("images-to-pdf", () => {
   it("makes one page per image (fit / a4)", async () => {
     for (const pageSize of ["fit", "a4", "letter"]) {

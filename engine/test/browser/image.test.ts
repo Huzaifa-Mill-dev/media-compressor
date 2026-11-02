@@ -28,6 +28,10 @@ describe("image compress/convert", () => {
     const r = await run("opt.jpg", { format: "original", quality: 100 });
     expect(r.outputs[0]!.size).toBeLessThanOrEqual(r.inputSize);
   });
+  it("png -> webp falls back to lossless for flat graphics instead of growing", async () => {
+    const r = await run("ui-alpha.png", { format: "webp", quality: 80 });
+    expect(r.outputs[0]!.size).toBeLessThan(r.inputSize);
+  });
   it("EXIF orientation is applied", async () => {
     const r = await run("rotated.jpg", { format: "png" }, "image-convert");
     expect(await dims(r.outputs[0]!.blob)).toEqual({ w: 200, h: 400 });
