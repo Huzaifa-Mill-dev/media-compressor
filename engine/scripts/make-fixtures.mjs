@@ -33,6 +33,15 @@ function noisyGradient(w, h, seed, amp) {
   }
   return buf;
 }
+function uiSvg(w, h) {
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><g opacity="0.08"><rect width="${w}" height="${h}" fill="#0b0b2a"/>`;
+  for (let i = 0; i < 8; i++) {
+    const x = 40 + (i % 4) * 350, y = 40 + Math.floor(i / 4) * 280;
+    s += `<rect x="${x}" y="${y}" width="320" height="250" rx="12" fill="#fff"/>`;
+    for (let l = 0; l < 10; l++) for (let k = 0; k < 12; k++) s += `<circle cx="${x + 20 + k * 14 + (l % 3)}" cy="${y + 24 + l * 22}" r="${3 + ((i + k + l) % 3)}" fill="#333"/>`;
+  }
+  return s + "</g></svg>";
+}
 const clamp = (v) => (v < 0 ? 0 : v > 255 ? 255 : v | 0);
 const raw = (w, h, ch) => ({ raw: { width: w, height: h, channels: ch } });
 
@@ -41,6 +50,8 @@ for (const i of [1, 2, 3]) make(`photo${i}.jpg`, (o) => sharp(noisyGradient(4000
 make("small.png", (o) => sharp(noisyGradient(800, 600, 9, 90), raw(800, 600, 3)).png().toFile(o));
 make("flat.png", (o) => sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#fff"/><circle cx="300" cy="200" r="140" fill="#2a6"/><rect x="20" y="20" width="180" height="100" fill="#c33"/></svg>')).png().toFile(o));
 make("alpha.png", (o) => sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><circle cx="150" cy="100" r="80" fill="rgba(255,0,0,0.6)"/></svg>')).png().toFile(o));
+// Flat UI graphic at 8% layer opacity (like a Figma 1.5x export): lossy WebP inflates it, lossless shrinks it
+make("ui-alpha.png", (o) => sharp(Buffer.from(uiSvg(1440, 600))).png({ compressionLevel: 9 }).toFile(o));
 make("opt.jpg", (o) => sharp(noisyGradient(300, 200, 4, 10), raw(300, 200, 3)).jpeg({ quality: 20 }).toFile(o));
 // EXIF orientation 6 (needs rotating 90° CW): stored 400x200, displays 200x400
 make("rotated.jpg", (o) => sharp(noisyGradient(400, 200, 5, 10), raw(400, 200, 3)).withMetadata({ orientation: 6 }).jpeg({ quality: 85 }).toFile(o));

@@ -17,6 +17,16 @@ export async function encodeWebp(img: ImageData, quality: number, effort: Effort
   return new Uint8Array(buf);
 }
 
+/** Lossless WebP. Flat graphics (UI exports, screenshots, logos) are often far smaller this way than lossy. */
+export async function encodeWebpLossless(img: ImageData, effort: Effort): Promise<Uint8Array> {
+  const { default: encode } = await import("@jsquash/webp/encode.js");
+  // In lossless mode `quality` is compression effort, not fidelity.
+  const quality = effort === "fast" ? 25 : effort === "best" ? 100 : 75;
+  const method = effort === "fast" ? 2 : effort === "best" ? 6 : 4;
+  const buf = await encode(img, { lossless: 1, quality, method, exact: 0 });
+  return new Uint8Array(buf);
+}
+
 /**
  * The shared 1–100 "quality" means the same visual quality for every format. libavif reaches a given look at much
  * lower numbers than WebP/JPEG (AVIF ~65 ≈ JPEG/WebP ~85), so it is rescaled; at high quality chroma is kept at full

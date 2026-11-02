@@ -65,6 +65,7 @@ export async function processImage(ctx: ProcCtx): Promise<ProcResult> {
   if (width || height) pipe = pipe.resize({ width, height, fit: "inside", withoutEnlargement: true });
 
   ctx.progress(30, "Encoding");
+  const base = pipe.clone();
   switch (fmt) {
     // Same visual-quality scale as the browser engine: AVIF is rescaled (~65 ≈ WebP/JPEG 85) and keeps full-resolution
     // chroma at high quality; WebP uses sharp YUV conversion for crisp coloured edges.
@@ -81,6 +82,14 @@ export async function processImage(ctx: ProcCtx): Promise<ProcResult> {
     info = await pipe.toFile(outPath);
   } catch (e) {
     throw new JobError(`Couldn't process ${input.name}: ${friendly(e)}`);
+  }
+  // Lossy WebP inflates flat graphics (e.g. Figma PNG exports): when a lossless source didn't shrink much, try lossless.
+  if (fmt === "webp" && ["png", "gif", "bmp"].includes(srcExt) && pages === 1 && info.size > input.size * 0.5) {
+    const lossless = await base.webp({ lossless: true, effort: [2, 4, 6][effort] }).toBuffer({ resolveWithObject: true }).catch(() => null);
+    if (lossless && lossless.data.length < info.size) {
+      await fs.writeFile(outPath, lossless.data);
+      info = { ...info, size: lossless.data.length };
+    }
   }
 
   // Never hand back something bigger than what was uploaded (compression only, same format family).

@@ -3,11 +3,12 @@ import { EngineError } from "../errors";
 import { extOf, formatToExt, mimeOf, outName } from "../formats";
 import type { ProcCtx, ProcResult } from "../protocol";
 import { bitmapToImageData, flattenOnWhite, hasTransparency, loadImage, resizeBitmap } from "./image-decode";
-import { effortOf, encodeAvif, encodeJpeg, encodePng, encodeWebp, type EncodeFormat } from "./image-encode";
+import { effortOf, encodeAvif, encodeJpeg, encodePng, encodeWebp, encodeWebpLossless, type EncodeFormat } from "./image-encode";
 import { fitWithin } from "./imageprobe";
 import { qualityScore } from "./ssim";
 
 const SSIM_MAX_PIXELS = 36_000_000;
+const LOSSLESS_SOURCES = new Set(["png", "gif", "bmp"]);
 
 /** Format used when the user asks to keep the input format ("original") — not every input is encodable. */
 export function resolveTargetFormat(requested: string, sourceKind: string): { format: EncodeFormat; changed: boolean } {
@@ -65,6 +66,12 @@ export async function processImage(ctx: ProcCtx): Promise<ProcResult> {
     switch (format) {
       case "webp":
         bytes = await encodeWebp(pixels, quality, effort);
+        // Lossy WebP inflates flat graphics (e.g. Figma PNG exports). When a lossless source didn't shrink much,
+        // try lossless too and keep the smaller; photos shrink a lot lossily, so they skip this extra encode.
+        if (LOSSLESS_SOURCES.has(img.kind) && bytes.length > file.size * 0.5) {
+          const lossless = await encodeWebpLossless(pixels, effort);
+          if (lossless.length < bytes.length) bytes = lossless;
+        }
         break;
       case "avif":
         bytes = await encodeAvif(pixels, quality, effort);
