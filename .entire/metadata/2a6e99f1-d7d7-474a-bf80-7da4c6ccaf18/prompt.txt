@@ -1,0 +1,18 @@
+our project has issues sometimes, sometimes it would increase the file size of a png exported in 1.5x or 2x and say that it was already compressed and increases the size from 200kb to 400kb
+See the example. this image was 1440px wide and exported on 1.5x and it increased the size.
+
+---
+
+Also my Zen browser is processing the images like this in lines lines, this happens when I upload a screenshot in a chatbox in AI for example, the thumbnail looks good but after uploading it looks broken, or if I generate the image like I did in our website it comes up like this and in the finder it will also look like that, but that doesn't happen outside my browser so can you tell me what is the issue and how to fix my browser issue
+
+---
+
+Not now
+
+---
+
+run the server test suite and commit the changes please after that
+
+---
+
+commit to main for now please.

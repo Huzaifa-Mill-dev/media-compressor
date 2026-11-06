@@ -53,6 +53,7 @@ const RULES: Record<string, Rule> = {
   heic: (b) => isFtyp(b),
   heif: (b) => isFtyp(b),
   bmp: (b) => ascii(b, 0, 2) === "BM",
+  svg: (b) => looksLikeText(b) && /<svg[\s>]/i.test(b.toString("utf8")),
   tif: (b) => startsWith(b, [0x49, 0x49, 0x2a, 0x00]) || startsWith(b, [0x4d, 0x4d, 0x00, 0x2a]),
   tiff: (b) => startsWith(b, [0x49, 0x49, 0x2a, 0x00]) || startsWith(b, [0x4d, 0x4d, 0x00, 0x2a]),
   // video

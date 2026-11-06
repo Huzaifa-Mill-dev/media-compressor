@@ -107,10 +107,10 @@ export const tools: ToolDefinition[] = [
     id: "image-convert",
     category: "image",
     slug: "convert-image",
-    title: "Image Converter — HEIC, PNG, JPG, WebP & AVIF",
+    title: "Image Converter — SVG, HEIC, PNG, JPG, WebP & AVIF",
     description:
-      "Convert HEIC, PNG, JPG, WebP, AVIF, GIF and BMP images to WebP, AVIF, JPG or PNG instantly in your browser — free and private.",
-    accepts: IMAGE_INPUTS,
+      "Convert SVG, HEIC, PNG, JPG, WebP, AVIF, GIF and BMP images to WebP, AVIF, JPG or PNG — free and private.",
+    accepts: [...IMAGE_INPUTS, "svg"],
     outputs: ["webp", "avif", "jpg", "png"],
     multiInput: false,
     runtimes: ["browser", "server"],

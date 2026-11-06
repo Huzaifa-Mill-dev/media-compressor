@@ -71,7 +71,7 @@ export const SERVER_TOOLS: Record<ToolId, ServerTool> = {
   "image-convert": {
     id: "image-convert",
     queue: "light",
-    accepts: IMAGE_INPUTS,
+    accepts: [...IMAGE_INPUTS, "svg"],
     multiInput: false,
     needs: [],
     timeoutMs: 2 * MIN,

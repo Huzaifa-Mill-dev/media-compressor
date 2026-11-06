@@ -25,8 +25,24 @@ export async function toDecodable(input: ProcInput, ctx: ProcCtx): Promise<strin
   throw new JobError(`${input.name}: .${input.ext} images can't be decoded on this server`);
 }
 
-async function open(file: string, ctx: ProcCtx, name: string): Promise<sharp.Sharp> {
-  const img = sharp(file, { limitInputPixels: ctx.cfg.maxImagePixels, animated: true, failOn: "error" });
+const SVG_MAX_BYTES = 10 * 1024 * 1024;
+const SVG_DENSITY = 144;
+
+/** SVGs are rasterised by librsvg: refuse DTD entities and anything that references files/URLs outside the document. */
+async function assertSafeSvg(file: string, name: string): Promise<void> {
+  const stat = await fs.stat(file);
+  if (stat.size > SVG_MAX_BYTES) throw new JobError(`${name} is too large for SVG conversion (max 10 MB)`);
+  const text = await fs.readFile(file, "utf8");
+  if (/<!ENTITY/i.test(text)) throw new JobError(`${name} uses XML entities, which aren't supported`);
+  const externalHref = /href\s*=\s*["']\s*(?!data:|#)[^"'\s]/i;
+  const externalUrl = /url\(\s*["']?\s*(?!#|data:)[^)\s"']/i;
+  if (externalHref.test(text) || externalUrl.test(text) || /@import/i.test(text)) {
+    throw new JobError(`${name} references external files or URLs, which aren't supported — embed them as data URIs`);
+  }
+}
+
+async function open(file: string, ctx: ProcCtx, name: string, svg = false): Promise<sharp.Sharp> {
+  const img = sharp(file, { limitInputPixels: ctx.cfg.maxImagePixels, animated: true, failOn: "error", ...(svg ? { density: SVG_DENSITY } : {}) });
   try {
     const m = await img.metadata();
     if (!m.width || !m.height) throw new Error("no dimensions");
@@ -53,12 +69,14 @@ export async function processImage(ctx: ProcCtx): Promise<ProcResult> {
   const effort = EFFORT[(o.effort as keyof typeof EFFORT) ?? "balanced"];
 
   ctx.progress(5, "Reading image");
+  const isSvg = input.ext === "svg";
+  if (isSvg) await assertSafeSvg(input.path, input.name);
   const src = await toDecodable(input, ctx);
-  const probe = await open(src, ctx, input.name);
+  const probe = await open(src, ctx, input.name, isSvg);
   const meta = await probe.metadata();
   const pages = meta.pages ?? 1;
 
-  let pipe = sharp(src, { limitInputPixels: ctx.cfg.maxImagePixels, animated: pages > 1 && fmt === "webp" });
+  let pipe = sharp(src, { limitInputPixels: ctx.cfg.maxImagePixels, animated: pages > 1 && fmt === "webp", ...(isSvg ? { density: SVG_DENSITY } : {}) });
   pipe = pipe.rotate(); // honour EXIF orientation, then strip it
   const width = o.width as number | undefined;
   const height = o.height as number | undefined;
@@ -84,7 +102,7 @@ export async function processImage(ctx: ProcCtx): Promise<ProcResult> {
     throw new JobError(`Couldn't process ${input.name}: ${friendly(e)}`);
   }
   // Lossy WebP inflates flat graphics (e.g. Figma PNG exports): when a lossless source didn't shrink much, try lossless.
-  if (fmt === "webp" && ["png", "gif", "bmp"].includes(srcExt) && pages === 1 && info.size > input.size * 0.5) {
+  if (fmt === "webp" && ["png", "gif", "bmp", "svg"].includes(srcExt) && pages === 1 && info.size > input.size * 0.5) {
     const lossless = await base.webp({ lossless: true, effort: [2, 4, 6][effort] }).toBuffer({ resolveWithObject: true }).catch(() => null);
     if (lossless && lossless.data.length < info.size) {
       await fs.writeFile(outPath, lossless.data);

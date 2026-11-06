@@ -10,6 +10,7 @@ const MIME: Record<string, string> = {
   bmp: "image/bmp",
   heic: "image/heic",
   heif: "image/heif",
+  svg: "image/svg+xml",
   tif: "image/tiff",
   tiff: "image/tiff",
   mp4: "video/mp4",
