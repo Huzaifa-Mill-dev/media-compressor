@@ -143,6 +143,19 @@ describe("image jobs", () => {
     const m = await sharp((await download(h, j2)).body).metadata();
     expect([m.format, m.width]).toEqual(["webp", 50]);
   });
+  it("SVG converts to WebP; external references are rejected", async () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60"><rect width="120" height="60" fill="#f60"/></svg>`;
+    const j = await runJob(h, "image-convert", [{ data: svg, name: "logo.svg" }], { format: "webp" });
+    expect(j.status).toBe("done");
+    expect(j.outputs[0].name).toBe("logo.webp");
+    const m = await sharp((await download(h, j)).body).metadata();
+    expect(m.format).toBe("webp");
+    expect(m.width).toBeGreaterThanOrEqual(120);
+    const evil = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10"><image xlink:href="file:///etc/passwd" width="10" height="10"/></svg>`;
+    const bad = await runJob(h, "image-convert", [{ data: evil, name: "evil.svg" }], { format: "webp" });
+    expect(bad.status).toBe("error");
+    expect((await upload(h, "image-compress", [{ data: svg, name: "logo.svg" }])).status).toBe(400);
+  });
   it("EXIF orientation is applied", async () => {
     const rot = await sharp({ create: { width: 400, height: 200, channels: 3, background: "#0099ff" } }).withMetadata({ orientation: 6 }).jpeg().toBuffer();
     const j = await runJob(h, "image-convert", [{ data: rot, name: "r.jpg" }], { format: "png" });
